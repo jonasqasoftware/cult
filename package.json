@@ -25,6 +25,7 @@
     "db:migrate": "pnpm --filter @cult/database run db:migrate",
     "ingest:ticketmaster:fixture": "pnpm --filter @cult/worker run ingest:ticketmaster:fixture",
     "ingest:ticketmaster": "pnpm --filter @cult/worker run ingest:ticketmaster",
+    "ingest:ticketmaster:live-smoke": "pnpm --filter @cult/worker run ingest:ticketmaster:live-smoke",
     "clean": "tsc -b --clean tsconfig.json && pnpm -r --if-present run clean"
   },
   "devDependencies": {

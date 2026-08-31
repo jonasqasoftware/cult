@@ -1,11 +1,11 @@
-import { afterAll, beforeEach, describe, expect, it } from "vitest";
+import { afterAll, describe, beforeEach, expect, it } from "vitest";
 import {
   createCanonicalEvent,
   createEventOccurrence,
   createEventSourceReference,
   createSourceDefinition,
 } from "@cult/domain";
-import { createCanonicalEventRepository, upsertSource } from "@cult/database";
+import { createCanonicalEventRepository, createDatabaseConnection, upsertSource } from "@cult/database";
 import { connectTestDatabase, truncateAllTables } from "@cult/database/test-support";
 import { buildServer } from "./server.js";
 
@@ -75,6 +75,29 @@ describe("apps/api health", () => {
     const response = await app.inject({ method: "GET", url: "/ready" });
     expect(response.statusCode).toBe(200);
     expect(response.json()).toEqual({ status: "ready" });
+  });
+});
+
+describe("GET /ready (database unreachable)", () => {
+  it("returns a generic problem+json 503 without leaking the internal DB error", async () => {
+    const unreachableConnectionString = "postgresql://cult:cult@127.0.0.1:1/nonexistent";
+    const unreachableConnection = createDatabaseConnection({
+      connectionString: unreachableConnectionString,
+    });
+    const unreachableApp = buildServer({ db: unreachableConnection.db });
+
+    try {
+      const response = await unreachableApp.inject({ method: "GET", url: "/ready" });
+      expect(response.statusCode).toBe(503);
+      expect(response.headers["content-type"]).toContain("application/problem+json");
+      const body = response.json();
+      expect(body.detail).toBe("A required dependency is unavailable");
+      expect(body.detail).not.toContain("127.0.0.1");
+      expect(JSON.stringify(body)).not.toContain(unreachableConnectionString);
+    } finally {
+      await unreachableApp.close();
+      await unreachableConnection.close();
+    }
   });
 });
 

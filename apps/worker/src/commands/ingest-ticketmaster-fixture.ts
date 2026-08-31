@@ -1,7 +1,7 @@
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { createTicketmasterFixtureAdapter } from "@cult/connectors";
-import { loadAppEnv } from "@cult/config";
+import { loadAppEnv, loadDotEnvIfPresent } from "@cult/config";
 import { runTicketmasterIngestion } from "../ingest-ticketmaster.js";
 
 const fixturePath = path.join(
@@ -10,6 +10,7 @@ const fixturePath = path.join(
 );
 
 async function main(): Promise<void> {
+  loadDotEnvIfPresent();
   const env = loadAppEnv();
   const adapter = createTicketmasterFixtureAdapter({ fixturePath });
   const summary = await runTicketmasterIngestion(adapter, env.databaseUrl);

@@ -30,11 +30,15 @@ export function buildServer(options: BuildServerOptions): FastifyInstance {
     return { status: "ok" };
   });
 
-  app.get("/ready", async (_request, reply) => {
+  app.get("/ready", async (request, reply) => {
     try {
       await ping(db);
       return { status: "ready" };
     } catch (error) {
+      // Log the real error server-side only — never in the response. A DB connection
+      // failure can carry internal details (hostnames, driver errors) an external caller
+      // has no business seeing.
+      request.log.error({ err: error }, "readiness check failed");
       return reply
         .code(503)
         .type("application/problem+json")
@@ -42,7 +46,7 @@ export function buildServer(options: BuildServerOptions): FastifyInstance {
           type: "/problems/not-ready",
           title: "Service is not ready",
           status: 503,
-          detail: error instanceof Error ? error.message : "Database is unreachable",
+          detail: "A required dependency is unavailable",
         });
     }
   });

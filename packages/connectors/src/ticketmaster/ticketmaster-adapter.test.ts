@@ -106,4 +106,87 @@ describe("createTicketmasterAdapter", () => {
     expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(collected).toHaveLength(0);
   });
+
+  it("never pages past Ticketmaster's documented ~1000-record deep-paging ceiling", async () => {
+    const fetchMock = vi.fn().mockImplementation(() =>
+      Promise.resolve(
+        jsonResponse({
+          _embedded: { events: [sampleEvent] },
+          page: { totalPages: 1000, number: 0 },
+        }),
+      ),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    const adapter = createTicketmasterAdapter({ apiKey: "k", minRequestIntervalMs: 0, pageSize: 20 });
+    const collected = [];
+    for await (const raw of adapter.collect({})) {
+      collected.push(raw);
+    }
+
+    // 1000 / 20 = 50 pages max, regardless of what totalPages claims
+    expect(fetchMock).toHaveBeenCalledTimes(50);
+  });
+
+  it("produces the same contentHash regardless of JSON key order", async () => {
+    const reordered = {
+      dates: sampleEvent.dates,
+      url: sampleEvent.url,
+      name: sampleEvent.name,
+      id: sampleEvent.id,
+    };
+
+    vi.stubGlobal(
+      "fetch",
+      vi
+        .fn()
+        .mockResolvedValueOnce(
+          jsonResponse({ _embedded: { events: [sampleEvent] }, page: { totalPages: 1, number: 0 } }),
+        ),
+    );
+    const original = [];
+    for await (const raw of createTicketmasterAdapter({ apiKey: "k", minRequestIntervalMs: 0 }).collect(
+      {},
+    )) {
+      original.push(raw);
+    }
+
+    vi.stubGlobal(
+      "fetch",
+      vi
+        .fn()
+        .mockResolvedValueOnce(
+          jsonResponse({ _embedded: { events: [reordered] }, page: { totalPages: 1, number: 0 } }),
+        ),
+    );
+    const withReorderedKeys = [];
+    for await (const raw of createTicketmasterAdapter({ apiKey: "k", minRequestIntervalMs: 0 }).collect(
+      {},
+    )) {
+      withReorderedKeys.push(raw);
+    }
+
+    expect(original[0]?.contentHash).toBe(withReorderedKeys[0]?.contentHash);
+  });
+
+  it("treats a missing/blank event id as no externalId, never as a literal 'undefined'", async () => {
+    const eventWithoutId = { ...sampleEvent, id: "" };
+    vi.stubGlobal(
+      "fetch",
+      vi
+        .fn()
+        .mockResolvedValueOnce(
+          jsonResponse({ _embedded: { events: [eventWithoutId] }, page: { totalPages: 1, number: 0 } }),
+        ),
+    );
+
+    const adapter = createTicketmasterAdapter({ apiKey: "k", minRequestIntervalMs: 0 });
+    const collected = [];
+    for await (const raw of adapter.collect({})) {
+      collected.push(raw);
+    }
+
+    expect(collected[0]?.externalId).toBeUndefined();
+    expect(collected[0]?.sourceUrl).not.toContain("undefined");
+  });
 });

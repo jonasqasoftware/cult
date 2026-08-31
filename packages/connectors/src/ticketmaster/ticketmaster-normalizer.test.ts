@@ -105,4 +105,61 @@ describe("normalizeTicketmasterEvent", () => {
     );
     expect(result.ok).toBe(false);
   });
+
+  it("rejects an event with a missing/blank id", () => {
+    const result = normalizeTicketmasterEvent(
+      { ...findFixtureEvent("TM-EVT-COMPLETE-0001"), id: "" },
+      context,
+    );
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.reason).toMatch(/id/i);
+  });
+
+  it('maps the US-spelled provider status "canceled" to domain "cancelled"', () => {
+    const result = normalizeTicketmasterEvent(
+      {
+        ...findFixtureEvent("TM-EVT-CANCELLED-0005"),
+        dates: {
+          ...findFixtureEvent("TM-EVT-CANCELLED-0005").dates,
+          status: { code: "canceled" },
+        },
+      },
+      context,
+    );
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.event.status).toBe("cancelled");
+  });
+
+  it("fails explicitly rather than inventing a 00:00 time when only localDate is present", () => {
+    const event = findFixtureEvent("TM-EVT-COMPLETE-0001");
+    const result = normalizeTicketmasterEvent(
+      {
+        ...event,
+        dates: {
+          ...event.dates,
+          start: { localDate: "2026-11-20", localTime: "20:00:00" },
+        },
+      },
+      context,
+    );
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.reason).toMatch(/dateTime|time/i);
+  });
+
+  it("disambiguates two distinct events that share the exact same title", () => {
+    const base = findFixtureEvent("TM-EVT-COMPLETE-0001");
+    const twin = { ...base, id: "TM-EVT-COMPLETE-0001-TWIN" };
+
+    const first = normalizeTicketmasterEvent(base, context);
+    const second = normalizeTicketmasterEvent(twin, context);
+    expect(first.ok && second.ok).toBe(true);
+    if (!first.ok || !second.ok) return;
+
+    expect(first.event.title).toBe(second.event.title);
+    expect(first.event.slug).not.toBe(second.event.slug);
+    expect(first.event.id).not.toBe(second.event.id);
+  });
 });

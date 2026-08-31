@@ -1,19 +1,20 @@
 import { createTicketmasterAdapter } from "@cult/connectors";
-import { loadAppEnv } from "@cult/config";
+import { loadAppEnv, loadDotEnvIfPresent } from "@cult/config";
+import { checkLiveIngestionAllowed } from "../live-ingestion-gate.js";
 import { runTicketmasterIngestion } from "../ingest-ticketmaster.js";
 
 async function main(): Promise<void> {
+  loadDotEnvIfPresent();
   const env = loadAppEnv();
-  if (!env.ticketmasterApiKey) {
-    console.error(
-      "[worker] TICKETMASTER_API_KEY is not set. Add it to your local .env to run a live " +
-        "ingestion — this command never falls back to the fixture. See docs/sources/ticketmaster.md.",
-    );
+
+  const gate = checkLiveIngestionAllowed(env);
+  if (!gate.allowed) {
+    console.error(`[worker] ${gate.reason}`);
     process.exit(1);
     return;
   }
 
-  const adapter = createTicketmasterAdapter({ apiKey: env.ticketmasterApiKey });
+  const adapter = createTicketmasterAdapter({ apiKey: gate.apiKey });
   const summary = await runTicketmasterIngestion(adapter, env.databaseUrl);
   console.log(JSON.stringify(summary));
 }

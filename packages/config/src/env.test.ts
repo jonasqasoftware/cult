@@ -1,5 +1,8 @@
-import { describe, expect, it } from "vitest";
-import { loadAppEnv } from "./env.js";
+import { writeFileSync, rmSync } from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+import { afterEach, describe, expect, it } from "vitest";
+import { loadAppEnv, loadDotEnvIfPresent } from "./env.js";
 
 describe("loadAppEnv", () => {
   it("throws when DATABASE_URL is missing", () => {
@@ -11,6 +14,7 @@ describe("loadAppEnv", () => {
     expect(env.nodeEnv).toBe("development");
     expect(env.apiPort).toBe(3001);
     expect(env.ticketmasterApiKey).toBeUndefined();
+    expect(env.ticketmasterLivePersistAck).toBe(false);
   });
 
   it("reads provided values, including an optional TICKETMASTER_API_KEY", () => {
@@ -23,5 +27,37 @@ describe("loadAppEnv", () => {
     expect(env.nodeEnv).toBe("test");
     expect(env.apiPort).toBe(4000);
     expect(env.ticketmasterApiKey).toBe("k");
+  });
+
+  it('only treats an exact "true" as an acknowledged live-persist gate', () => {
+    expect(
+      loadAppEnv({ DATABASE_URL: "postgresql://x", TICKETMASTER_LIVE_PERSIST_ACK: "true" })
+        .ticketmasterLivePersistAck,
+    ).toBe(true);
+    expect(
+      loadAppEnv({ DATABASE_URL: "postgresql://x", TICKETMASTER_LIVE_PERSIST_ACK: "yes" })
+        .ticketmasterLivePersistAck,
+    ).toBe(false);
+  });
+});
+
+describe("loadDotEnvIfPresent", () => {
+  const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../..");
+  const tempEnvName = ".env.loadDotEnvIfPresent.test";
+  const tempEnvPath = path.join(repoRoot, tempEnvName);
+
+  afterEach(() => {
+    delete process.env["LOAD_DOT_ENV_TEST_VAR"];
+    rmSync(tempEnvPath, { force: true });
+  });
+
+  it("does not throw when the file is missing", () => {
+    expect(() => loadDotEnvIfPresent(".env.definitely-does-not-exist")).not.toThrow();
+  });
+
+  it("loads variables from an existing file at the repo root", () => {
+    writeFileSync(tempEnvPath, "LOAD_DOT_ENV_TEST_VAR=hello\n");
+    loadDotEnvIfPresent(tempEnvName);
+    expect(process.env["LOAD_DOT_ENV_TEST_VAR"]).toBe("hello");
   });
 });

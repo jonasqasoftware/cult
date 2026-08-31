@@ -1,7 +1,8 @@
-import { loadAppEnv } from "@cult/config";
+import { loadAppEnv, loadDotEnvIfPresent } from "@cult/config";
 import { createDatabaseConnection } from "@cult/database";
 import { buildServer } from "./server.js";
 
+loadDotEnvIfPresent();
 const env = loadAppEnv();
 const host = process.env["API_HOST"] ?? "0.0.0.0";
 

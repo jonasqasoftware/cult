@@ -9,7 +9,12 @@ import {
   type Performer,
   type Venue,
 } from "@cult/domain";
-import { generateSlug, PROVISIONAL_QUALITY_SCORE, PROVISIONAL_RANKING_SCORE } from "@cult/canonical-events";
+import {
+  buildEventSlug,
+  PROVISIONAL_QUALITY_SCORE,
+  PROVISIONAL_RANKING_SCORE,
+  generateSlug,
+} from "@cult/canonical-events";
 import type {
   TicketmasterAttraction,
   TicketmasterDateInfo,
@@ -36,6 +41,13 @@ export function normalizeTicketmasterEvent(
   tmEvent: TicketmasterEvent,
   context: NormalizeTicketmasterEventContext,
 ): NormalizationResult {
+  // tmEvent is untrusted external JSON — TypeScript's `id: string` is a compile-time promise
+  // only. Validate before using it to build id/slug/sourceUrl/provenance.
+  const externalId = typeof tmEvent.id === "string" ? tmEvent.id.trim() : "";
+  if (!externalId) {
+    return { ok: false, reason: "Ticketmaster event is missing a usable id" };
+  }
+
   const title = tmEvent.name?.trim();
   if (!title) {
     return { ok: false, reason: "Ticketmaster event has no name" };
@@ -51,11 +63,14 @@ export function normalizeTicketmasterEvent(
 
   const startsAt = resolveStartsAt(tmEvent.dates);
   if (!startsAt) {
-    return { ok: false, reason: "Ticketmaster event has no usable start date" };
+    return {
+      ok: false,
+      reason: "Ticketmaster event has no precise start dateTime (localDate-only is not enough to invent a time)",
+    };
   }
 
-  const id = `${context.sourceId}-${tmEvent.id}`;
-  const sourceUrl = tmEvent.url ?? `https://www.ticketmaster.com/event/${tmEvent.id}`;
+  const id = `${context.sourceId}-${externalId}`;
+  const sourceUrl = tmEvent.url ?? `https://www.ticketmaster.com/event/${externalId}`;
 
   try {
     const occurrence = createEventOccurrence({
@@ -67,7 +82,7 @@ export function normalizeTicketmasterEvent(
 
     const source = createEventSourceReference({
       sourceId: context.sourceId,
-      externalId: tmEvent.id,
+      externalId,
       url: sourceUrl,
       firstSeenAt: context.now,
       lastSeenAt: context.now,
@@ -92,7 +107,7 @@ export function normalizeTicketmasterEvent(
 
     const event = createCanonicalEvent({
       id,
-      slug: generateSlug(title),
+      slug: buildEventSlug(title, context.sourceId, externalId),
       title,
       ...(description ? { description } : {}),
       ...(categoryId ? { categoryId } : {}),
@@ -126,6 +141,7 @@ function mapStatus(code: string | undefined): EventStatus | null {
     case "offsale":
       return "scheduled";
     case "cancelled":
+    case "canceled":
       return "cancelled";
     case "postponed":
       return "postponed";
@@ -136,19 +152,16 @@ function mapStatus(code: string | undefined): EventStatus | null {
   }
 }
 
+// Only a precise dateTime is trustworthy. Ticketmaster's localDate-only case (no time
+// component, e.g. `dates.start.noSpecificTime`) does NOT get a fabricated "00:00" — that
+// would assert a false level of precision. Normalization fails explicitly instead; the raw
+// payload is still preserved (ADR-0006/0013), and this event can be revisited if a future
+// milestone models "date known, time unknown" in the domain.
 function resolveStartsAt(dates: TicketmasterDateInfo | undefined): Date | null {
   const dateTime = dates?.start?.dateTime;
-  if (dateTime) {
-    const parsed = new Date(dateTime);
-    if (!Number.isNaN(parsed.getTime())) return parsed;
-  }
-  const localDate = dates?.start?.localDate;
-  if (localDate) {
-    // No local time given — assume midnight in the MVP's fixed America/Sao_Paulo (-03:00) timezone.
-    const parsed = new Date(`${localDate}T00:00:00-03:00`);
-    if (!Number.isNaN(parsed.getTime())) return parsed;
-  }
-  return null;
+  if (!dateTime) return null;
+  const parsed = new Date(dateTime);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
 }
 
 function buildVenue(tmVenue: TicketmasterVenue | undefined): Venue | undefined {

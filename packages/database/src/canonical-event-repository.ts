@@ -1,4 +1,4 @@
-import { eq, type SQL } from "drizzle-orm";
+import { and, eq, notInArray, type SQL } from "drizzle-orm";
 import { createCanonicalEvent, type CanonicalEvent, type CanonicalEventRepositoryPort } from "@cult/domain";
 import { eventOccurrences, events, eventSources, venues } from "./schema.js";
 import type { Database } from "./client.js";
@@ -28,7 +28,11 @@ export function createCanonicalEventRepository(db: Database): CanonicalEventRepo
             .onConflictDoUpdate({ target: venues.id, set: venueValues });
         }
 
-        const eventValues = {
+        // firstSeenAt/createdAt are intentionally OMITTED from the update `set` below (they
+        // are only used in the initial insert): on conflict, Postgres leaves a column out of
+        // SET untouched, so an existing row's original firstSeenAt/createdAt survives every
+        // re-ingestion instead of being reset to "now" on each run.
+        const eventUpdateValues = {
           slug: event.slug,
           title: event.title,
           description: event.description ?? null,
@@ -46,17 +50,20 @@ export function createCanonicalEventRepository(db: Database): CanonicalEventRepo
           canonicalUrl: event.canonicalUrl ?? null,
           qualityScore: event.qualityScore,
           rankingScore: event.rankingScore,
-          firstSeenAt: event.firstSeenAt,
           lastSeenAt: event.lastSeenAt,
           lastVerifiedAt: event.lastVerifiedAt ?? null,
-          createdAt: event.createdAt,
           updatedAt: event.updatedAt,
         };
 
         await tx
           .insert(events)
-          .values({ id: event.id, ...eventValues })
-          .onConflictDoUpdate({ target: events.id, set: eventValues });
+          .values({
+            id: event.id,
+            firstSeenAt: event.firstSeenAt,
+            createdAt: event.createdAt,
+            ...eventUpdateValues,
+          })
+          .onConflictDoUpdate({ target: events.id, set: eventUpdateValues });
 
         await tx.delete(eventOccurrences).where(eq(eventOccurrences.eventId, event.id));
         if (event.occurrences.length > 0) {
@@ -72,20 +79,41 @@ export function createCanonicalEventRepository(db: Database): CanonicalEventRepo
           );
         }
 
-        await tx.delete(eventSources).where(eq(eventSources.eventId, event.id));
-        if (event.sources.length > 0) {
-          await tx.insert(eventSources).values(
-            event.sources.map((source) => ({
+        // Drop any existing source reference no longer present in this save (e.g. a source
+        // explicitly removed) — but never touch the ones we're about to upsert below, so
+        // their firstSeenAt (omitted from the update `set`) survives.
+        const incomingSourceIds = event.sources.map((source) => source.sourceId);
+        await tx
+          .delete(eventSources)
+          .where(
+            and(
+              eq(eventSources.eventId, event.id),
+              incomingSourceIds.length > 0
+                ? notInArray(eventSources.sourceId, incomingSourceIds)
+                : undefined,
+            ),
+          );
+
+        for (const source of event.sources) {
+          const sourceUpdateValues = {
+            externalId: source.externalId ?? null,
+            url: source.url,
+            lastSeenAt: source.lastSeenAt,
+            lastVerifiedAt: source.lastVerifiedAt ?? null,
+            confidence: source.confidence,
+          };
+          await tx
+            .insert(eventSources)
+            .values({
               eventId: event.id,
               sourceId: source.sourceId,
-              externalId: source.externalId ?? null,
-              url: source.url,
               firstSeenAt: source.firstSeenAt,
-              lastSeenAt: source.lastSeenAt,
-              lastVerifiedAt: source.lastVerifiedAt ?? null,
-              confidence: source.confidence,
-            })),
-          );
+              ...sourceUpdateValues,
+            })
+            .onConflictDoUpdate({
+              target: [eventSources.eventId, eventSources.sourceId],
+              set: sourceUpdateValues,
+            });
         }
       });
     },
