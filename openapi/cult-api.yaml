@@ -1,0 +1,292 @@
+openapi: 3.1.0
+info:
+  title: CULT API
+  version: 0.1.0
+  description: Private backend API for CULT MVP 1.
+servers:
+  - url: http://localhost:3001
+paths:
+  /health:
+    get:
+      summary: Liveness check
+      responses:
+        "200":
+          description: Service is alive
+  /ready:
+    get:
+      summary: Readiness check
+      responses:
+        "200":
+          description: Service is ready
+        "503":
+          description: Service is not ready
+  /v1/events:
+    get:
+      summary: List cultural events
+      parameters:
+        - in: query
+          name: q
+          schema:
+            type: string
+        - in: query
+          name: category
+          schema:
+            type: string
+        - in: query
+          name: start
+          schema:
+            type: string
+            format: date-time
+        - in: query
+          name: end
+          schema:
+            type: string
+            format: date-time
+        - in: query
+          name: free
+          schema:
+            type: boolean
+        - in: query
+          name: lat
+          schema:
+            type: number
+            format: double
+        - in: query
+          name: lng
+          schema:
+            type: number
+            format: double
+        - in: query
+          name: radius
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 50000
+        - in: query
+          name: status
+          schema:
+            $ref: "#/components/schemas/EventStatus"
+        - in: query
+          name: cursor
+          schema:
+            type: string
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+      responses:
+        "200":
+          description: Event page
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EventListResponse"
+        "400":
+          $ref: "#/components/responses/Problem"
+  /v1/events/{slug}:
+    get:
+      summary: Get one cultural event by slug
+      parameters:
+        - in: path
+          name: slug
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Event
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Event"
+        "404":
+          $ref: "#/components/responses/Problem"
+  /v1/categories:
+    get:
+      summary: List event categories
+      responses:
+        "200":
+          description: Categories
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Category"
+
+components:
+  responses:
+    Problem:
+      description: RFC 9457 Problem Details
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/ProblemDetails"
+
+  schemas:
+    EventStatus:
+      type: string
+      enum:
+        - scheduled
+        - cancelled
+        - postponed
+        - rescheduled
+        - completed
+
+    EventListResponse:
+      type: object
+      required: [data, pagination]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/Event"
+        pagination:
+          type: object
+          properties:
+            next_cursor:
+              type: [string, "null"]
+
+    Event:
+      type: object
+      required:
+        - id
+        - slug
+        - title
+        - status
+        - occurrences
+        - sources
+        - quality_score
+        - ranking_score
+      properties:
+        id:
+          type: string
+        slug:
+          type: string
+        title:
+          type: string
+        description:
+          type: [string, "null"]
+        status:
+          $ref: "#/components/schemas/EventStatus"
+        category:
+          type: [string, "null"]
+        occurrences:
+          type: array
+          items:
+            $ref: "#/components/schemas/EventOccurrence"
+        venue:
+          anyOf:
+            - $ref: "#/components/schemas/Venue"
+            - type: "null"
+        free:
+          type: [boolean, "null"]
+        price_min:
+          type: [number, "null"]
+        price_max:
+          type: [number, "null"]
+        currency:
+          type: [string, "null"]
+          example: BRL
+        image_url:
+          type: [string, "null"]
+          format: uri
+        ticket_url:
+          type: [string, "null"]
+          format: uri
+        sources:
+          type: array
+          items:
+            $ref: "#/components/schemas/EventSource"
+        quality_score:
+          type: number
+          minimum: 0
+          maximum: 1
+        ranking_score:
+          type: number
+
+    EventOccurrence:
+      type: object
+      required: [starts_at, timezone, status]
+      properties:
+        starts_at:
+          type: string
+          format: date-time
+        ends_at:
+          type: [string, "null"]
+          format: date-time
+        timezone:
+          type: string
+          example: America/Sao_Paulo
+        status:
+          $ref: "#/components/schemas/EventStatus"
+
+    Venue:
+      type: object
+      required: [name, city, state, country]
+      properties:
+        name:
+          type: string
+        address:
+          type: [string, "null"]
+        neighborhood:
+          type: [string, "null"]
+        city:
+          type: string
+        state:
+          type: string
+        country:
+          type: string
+        latitude:
+          type: [number, "null"]
+        longitude:
+          type: [number, "null"]
+
+    EventSource:
+      type: object
+      required: [source_id, url, confidence]
+      properties:
+        source_id:
+          type: string
+        external_id:
+          type: [string, "null"]
+        url:
+          type: string
+          format: uri
+        confidence:
+          type: number
+          minimum: 0
+          maximum: 1
+
+    Category:
+      type: object
+      required: [id, name, slug]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        slug:
+          type: string
+
+    ProblemDetails:
+      type: object
+      required: [type, title, status]
+      properties:
+        type:
+          type: string
+        title:
+          type: string
+        status:
+          type: integer
+        detail:
+          type: string
+        instance:
+          type: string

@@ -1,0 +1,44 @@
+# dependencies
+node_modules/
+.pnpm-store/
+
+# build output
+dist/
+build/
+.next/
+out/
+*.tsbuildinfo
+
+# env
+.env
+.env.local
+.env.*.local
+.env.*
+!.env.example
+
+# logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# test / coverage
+coverage/
+
+# editor
+.vscode/*
+!.vscode/extensions.json
+.idea/
+
+# os
+.DS_Store
+
+# docker
+postgres-data/
+
+# claude code (local session state)
+.claude/settings.local.json
+.claude/scheduled_tasks.lock
+
+# tmp
+tmp/
+temp/

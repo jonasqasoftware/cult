@@ -1,0 +1,15 @@
+{
+  "files": [],
+  "references": [
+    { "path": "packages/domain" },
+    { "path": "packages/database" },
+    { "path": "packages/connectors" },
+    { "path": "packages/canonical-events" },
+    { "path": "packages/deduplication" },
+    { "path": "packages/ranking" },
+    { "path": "packages/config" },
+    { "path": "packages/observability" },
+    { "path": "apps/api" },
+    { "path": "apps/worker" }
+  ]
+}
