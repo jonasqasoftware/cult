@@ -1,8 +1,14 @@
 import { describe, expect, it } from "vitest";
+import * as domain from "./index.js";
 
-describe("@cult/domain (M0 scaffold)", () => {
-  it("loads as a module without implementation", async () => {
-    const mod = await import("./index.js");
-    expect(mod).toBeDefined();
+describe("@cult/domain public exports", () => {
+  it("exposes the domain factories and ports through the package barrel", () => {
+    expect(typeof domain.createCanonicalEvent).toBe("function");
+    expect(typeof domain.createEventOccurrence).toBe("function");
+    expect(typeof domain.createVenue).toBe("function");
+    expect(typeof domain.createSourceDefinition).toBe("function");
+    expect(typeof domain.createEventSourceReference).toBe("function");
+    expect(typeof domain.createInMemorySourceRegistry).toBe("function");
+    expect(typeof domain.DomainValidationError).toBe("function");
   });
 });
