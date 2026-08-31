@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest";
+import * as config from "./index.js";
 
-describe("@cult/config (M0 scaffold)", () => {
-  it("loads as a module without implementation", async () => {
-    const mod = await import("./index.js");
-    expect(mod).toBeDefined();
+describe("@cult/config public exports", () => {
+  it("exposes env loading and the development source registry", () => {
+    expect(typeof config.loadAppEnv).toBe("function");
+    expect(typeof config.createDevelopmentSourceRegistry).toBe("function");
+    expect(config.TICKETMASTER_SOURCE_DEFINITION.id).toBe("ticketmaster");
   });
 });

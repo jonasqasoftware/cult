@@ -23,6 +23,10 @@ paths:
   /v1/events:
     get:
       summary: List cultural events
+      description: >-
+        M2 vertical-slice status: only `cursor` and `limit` are implemented. Every other
+        filter below is part of the target contract but returns 400
+        (type `/problems/filter-not-implemented`) if supplied — it is never silently ignored.
       parameters:
         - in: query
           name: q

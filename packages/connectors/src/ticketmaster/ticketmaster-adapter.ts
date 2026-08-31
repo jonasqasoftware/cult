@@ -1,0 +1,95 @@
+import { createHash, randomUUID } from "node:crypto";
+import type { CollectionContext, EventSourcePort, RawSourceEvent, SourceHealth } from "@cult/domain";
+import {
+  createTicketmasterClient,
+  type TicketmasterClientConfig,
+} from "./ticketmaster-client.js";
+import type { TicketmasterEvent } from "./ticketmaster-types.js";
+
+export const TICKETMASTER_SOURCE_ID = "ticketmaster";
+
+const RAW_EVENT_SCHEMA_VERSION = 1;
+const DEFAULT_CITY = "Porto Alegre";
+const DEFAULT_COUNTRY_CODE = "BR";
+const DEFAULT_PAGE_SIZE = 20;
+
+export interface TicketmasterAdapterConfig extends TicketmasterClientConfig {
+  readonly city?: string;
+  readonly countryCode?: string;
+  readonly pageSize?: number;
+}
+
+// Implements the provider-independent EventSourcePort from @cult/domain. Only ever produces
+// RawSourceEvent — normalization into CanonicalEvent is a separate, later step
+// (ticketmaster-normalizer.ts), never done here.
+export function createTicketmasterAdapter(config: TicketmasterAdapterConfig): EventSourcePort {
+  const client = createTicketmasterClient(config);
+  const city = config.city ?? DEFAULT_CITY;
+  const countryCode = config.countryCode ?? DEFAULT_COUNTRY_CODE;
+  const pageSize = config.pageSize ?? DEFAULT_PAGE_SIZE;
+
+  return {
+    sourceId: TICKETMASTER_SOURCE_ID,
+
+    async *collect(context: CollectionContext): AsyncIterable<RawSourceEvent> {
+      const startDateTime = context.since ? context.since.toISOString() : undefined;
+      let page = 0;
+
+      for (;;) {
+        const response = await client.searchEvents({
+          countryCode,
+          city,
+          page,
+          size: pageSize,
+          ...(startDateTime ? { startDateTime } : {}),
+        });
+
+        const tmEvents = response._embedded?.events ?? [];
+        for (const tmEvent of tmEvents) {
+          yield ticketmasterEventToRawSourceEvent(tmEvent);
+        }
+
+        const totalPages = response.page?.totalPages ?? 1;
+        page += 1;
+        if (tmEvents.length === 0 || page >= totalPages) {
+          break;
+        }
+      }
+    },
+
+    async healthCheck(): Promise<SourceHealth> {
+      try {
+        await client.searchEvents({ countryCode, city, size: 1 });
+        return { healthy: true, checkedAt: new Date() };
+      } catch (error) {
+        return {
+          healthy: false,
+          checkedAt: new Date(),
+          message: error instanceof Error ? error.message : String(error),
+        };
+      }
+    },
+  };
+}
+
+// Exported for reuse by ticketmaster-fixture-adapter.ts, which maps the same
+// Ticketmaster-shaped payload without making any HTTP call.
+export function ticketmasterEventToRawSourceEvent(tmEvent: TicketmasterEvent): RawSourceEvent {
+  const sourceUrl = tmEvent.url ?? `https://www.ticketmaster.com/event/${tmEvent.id}`;
+  return {
+    id: randomUUID(),
+    sourceId: TICKETMASTER_SOURCE_ID,
+    externalId: tmEvent.id,
+    sourceUrl,
+    payload: tmEvent,
+    contentHash: hashPayload(tmEvent),
+    fetchedAt: new Date(),
+    schemaVersion: RAW_EVENT_SCHEMA_VERSION,
+  };
+}
+
+// Deterministic for a given payload (same key order as received from the API response) —
+// enough to detect "unchanged since last fetch" without a canonical-JSON dependency.
+function hashPayload(payload: unknown): string {
+  return createHash("sha256").update(JSON.stringify(payload)).digest("hex");
+}

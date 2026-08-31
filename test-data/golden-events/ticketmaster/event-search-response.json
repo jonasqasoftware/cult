@@ -1,0 +1,151 @@
+{
+  "_embedded": {
+    "events": [
+      {
+        "id": "TM-EVT-COMPLETE-0001",
+        "name": "Rock in Porto Alegre",
+        "url": "https://www.ticketmaster.com/event/tm-evt-complete-0001",
+        "images": [
+          { "url": "https://example.invalid/tm/complete-0001.jpg", "ratio": "16_9", "width": 1024, "height": 576 }
+        ],
+        "info": "Portas abrem às 19h.",
+        "dates": {
+          "start": { "localDate": "2026-11-20", "localTime": "20:00:00", "dateTime": "2026-11-20T23:00:00Z" },
+          "status": { "code": "onsale" }
+        },
+        "classifications": [
+          { "primary": true, "segment": { "name": "Music" }, "genre": { "name": "Rock" } }
+        ],
+        "priceRanges": [
+          { "type": "standard", "currency": "BRL", "min": 80.0, "max": 350.0 }
+        ],
+        "_embedded": {
+          "venues": [
+            {
+              "name": "Arena do Grêmio",
+              "city": { "name": "Porto Alegre" },
+              "state": { "stateCode": "RS" },
+              "country": { "countryCode": "BR" },
+              "address": { "line1": "Av. Padre Leopoldo Brentano, 110" },
+              "location": { "latitude": "-30.0654", "longitude": "-51.2354" }
+            }
+          ],
+          "attractions": [
+            { "id": "TM-ATTR-0001", "name": "Banda Exemplo" }
+          ]
+        }
+      },
+      {
+        "id": "TM-EVT-NOPRICE-0002",
+        "name": "Peça de Teatro Sem Preço Divulgado",
+        "url": "https://www.ticketmaster.com/event/tm-evt-noprice-0002",
+        "images": [
+          { "url": "https://example.invalid/tm/noprice-0002.jpg", "ratio": "16_9", "width": 1024, "height": 576 }
+        ],
+        "dates": {
+          "start": { "localDate": "2026-10-05", "localTime": "19:30:00", "dateTime": "2026-10-05T22:30:00Z" },
+          "status": { "code": "onsale" }
+        },
+        "classifications": [
+          { "primary": true, "segment": { "name": "Arts & Theatre" } }
+        ],
+        "_embedded": {
+          "venues": [
+            {
+              "name": "Teatro São Pedro",
+              "city": { "name": "Porto Alegre" },
+              "state": { "stateCode": "RS" },
+              "country": { "countryCode": "BR" }
+            }
+          ]
+        }
+      },
+      {
+        "id": "TM-EVT-NOIMAGE-0003",
+        "name": "Feira Gratuita do Centro",
+        "url": "https://www.ticketmaster.com/event/tm-evt-noimage-0003",
+        "images": [],
+        "dates": {
+          "start": { "localDate": "2026-09-13", "localTime": "10:00:00", "dateTime": "2026-09-13T13:00:00Z" },
+          "status": { "code": "onsale" }
+        },
+        "classifications": [
+          { "primary": true, "segment": { "name": "Miscellaneous" } }
+        ],
+        "priceRanges": [
+          { "type": "standard", "currency": "BRL", "min": 0, "max": 0 }
+        ],
+        "_embedded": {
+          "venues": [
+            {
+              "name": "Praça da Alfândega",
+              "city": { "name": "Porto Alegre" },
+              "state": { "stateCode": "RS" },
+              "country": { "countryCode": "BR" },
+              "location": { "latitude": "-30.0304", "longitude": "-51.2277" }
+            }
+          ]
+        }
+      },
+      {
+        "id": "TM-EVT-NOVENUE-0004",
+        "name": "Evento Sem Local Confirmado",
+        "url": "https://www.ticketmaster.com/event/tm-evt-novenue-0004",
+        "images": [
+          { "url": "https://example.invalid/tm/novenue-0004.jpg", "ratio": "16_9", "width": 1024, "height": 576 }
+        ],
+        "dates": {
+          "start": { "localDate": "2026-12-01", "localTime": "21:00:00", "dateTime": "2026-12-02T00:00:00Z" },
+          "status": { "code": "onsale" }
+        },
+        "classifications": [
+          { "primary": true, "segment": { "name": "Music" } }
+        ]
+      },
+      {
+        "id": "TM-EVT-CANCELLED-0005",
+        "name": "Show Cancelado de Exemplo",
+        "url": "https://www.ticketmaster.com/event/tm-evt-cancelled-0005",
+        "images": [
+          { "url": "https://example.invalid/tm/cancelled-0005.jpg", "ratio": "16_9", "width": 1024, "height": 576 }
+        ],
+        "dates": {
+          "start": { "localDate": "2026-11-01", "localTime": "20:00:00", "dateTime": "2026-11-01T23:00:00Z" },
+          "status": { "code": "cancelled" }
+        },
+        "classifications": [
+          { "primary": true, "segment": { "name": "Music" } }
+        ],
+        "_embedded": {
+          "venues": [
+            {
+              "name": "Opinião",
+              "city": { "name": "Porto Alegre" },
+              "state": { "stateCode": "RS" },
+              "country": { "countryCode": "BR" }
+            }
+          ]
+        }
+      },
+      {
+        "id": "TM-EVT-BADSTATUS-0006",
+        "name": "Evento Com Status Não Mapeável",
+        "url": "https://www.ticketmaster.com/event/tm-evt-badstatus-0006",
+        "images": [],
+        "dates": {
+          "start": { "localDate": "2026-10-20", "localTime": "20:00:00", "dateTime": "2026-10-20T23:00:00Z" },
+          "status": { "code": "vendor-specific-unmapped-code" }
+        },
+        "classifications": [
+          { "primary": true, "segment": { "name": "Music" } }
+        ]
+      }
+    ]
+  },
+  "page": {
+    "size": 20,
+    "totalElements": 6,
+    "totalPages": 1,
+    "number": 0
+  }
+}

@@ -1,8 +1,12 @@
 import { describe, expect, it } from "vitest";
+import * as database from "./index.js";
 
-describe("@cult/database (M0 scaffold)", () => {
-  it("loads as a module without implementation", async () => {
-    const mod = await import("./index.js");
-    expect(mod).toBeDefined();
+describe("@cult/database public exports", () => {
+  it("exposes the connection factory and repository factories through the package barrel", () => {
+    expect(typeof database.createDatabaseConnection).toBe("function");
+    expect(typeof database.createRawEventRepository).toBe("function");
+    expect(typeof database.createCanonicalEventRepository).toBe("function");
+    expect(typeof database.listCanonicalEvents).toBe("function");
+    expect(typeof database.upsertSource).toBe("function");
   });
 });

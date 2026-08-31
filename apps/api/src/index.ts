@@ -1,14 +1,17 @@
+import { loadAppEnv } from "@cult/config";
+import { createDatabaseConnection } from "@cult/database";
 import { buildServer } from "./server.js";
 
-const port = Number(process.env["API_PORT"] ?? 3001);
+const env = loadAppEnv();
 const host = process.env["API_HOST"] ?? "0.0.0.0";
 
-const app = buildServer();
+const connection = createDatabaseConnection({ connectionString: env.databaseUrl });
+const app = buildServer({ db: connection.db });
 
 app
-  .listen({ port, host })
+  .listen({ port: env.apiPort, host })
   .then(() => {
-    app.log.info(`CULT API listening on http://${host}:${port}`);
+    app.log.info(`CULT API listening on http://${host}:${env.apiPort}`);
   })
   .catch((error: unknown) => {
     app.log.error(error);

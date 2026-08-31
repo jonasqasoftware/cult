@@ -10,5 +10,9 @@
   },
   "scripts": {
     "clean": "rm -rf dist *.tsbuildinfo"
+  },
+  "dependencies": {
+    "@cult/canonical-events": "workspace:*",
+    "@cult/domain": "workspace:*"
   }
 }

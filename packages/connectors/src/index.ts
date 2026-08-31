@@ -1,3 +1,5 @@
-// Reserved for M2 — source adapters (Ticketmaster, Destino POA, Prefeitura POA).
-// No implementation in M0 (Foundation).
-export {};
+export * from "./ticketmaster/ticketmaster-types.js";
+export * from "./ticketmaster/ticketmaster-client.js";
+export * from "./ticketmaster/ticketmaster-adapter.js";
+export * from "./ticketmaster/ticketmaster-fixture-adapter.js";
+export * from "./ticketmaster/ticketmaster-normalizer.js";

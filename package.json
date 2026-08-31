@@ -21,6 +21,10 @@
     "dev:worker": "pnpm --filter @cult/worker dev",
     "db:up": "docker compose up -d postgres",
     "db:down": "docker compose down",
+    "db:generate": "pnpm --filter @cult/database run db:generate",
+    "db:migrate": "pnpm --filter @cult/database run db:migrate",
+    "ingest:ticketmaster:fixture": "pnpm --filter @cult/worker run ingest:ticketmaster:fixture",
+    "ingest:ticketmaster": "pnpm --filter @cult/worker run ingest:ticketmaster",
     "clean": "tsc -b --clean tsconfig.json && pnpm -r --if-present run clean"
   },
   "devDependencies": {

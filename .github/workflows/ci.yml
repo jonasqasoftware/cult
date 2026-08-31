@@ -8,6 +8,25 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgis/postgis:16-3.4-alpine
+        env:
+          POSTGRES_USER: cult
+          POSTGRES_PASSWORD: cult
+          POSTGRES_DB: cult
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U cult -d cult"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      DATABASE_URL: postgresql://cult:cult@localhost:5432/cult
+
     steps:
       - uses: actions/checkout@v4
 
@@ -27,6 +46,14 @@ jobs:
 
       - name: Typecheck
         run: pnpm typecheck
+
+      - name: Enable required PostgreSQL extensions
+        run: |
+          PGPASSWORD=cult psql -h localhost -U cult -d cult -c "CREATE EXTENSION IF NOT EXISTS postgis;"
+          PGPASSWORD=cult psql -h localhost -U cult -d cult -c "CREATE EXTENSION IF NOT EXISTS pg_trgm;"
+
+      - name: Run database migrations
+        run: pnpm db:migrate
 
       - name: Test
         run: pnpm test

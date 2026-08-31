@@ -1,3 +1,7 @@
-// Reserved for M1/M2 — Drizzle schema, migrations and repositories.
-// No implementation in M0 (Foundation).
-export {};
+export * from "./client.js";
+export * from "./schema.js";
+export * from "./ping.js";
+export * from "./raw-event-repository.js";
+export * from "./canonical-event-repository.js";
+export * from "./list-canonical-events.js";
+export * from "./source-repository.js";
