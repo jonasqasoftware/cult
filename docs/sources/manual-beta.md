@@ -51,6 +51,11 @@ are missing/invalid
   removed).
 - `ticketUrl` / `imageUrl`, if present, must also be valid `http(s)` URLs.
 - `priceValue`, if present, must be a non-negative number.
+- `latitude` / `longitude` (M10.2 Phase C) — optional, but both or neither: a lone coordinate
+  is rejected rather than silently dropped (it would otherwise place a marker at an unintended
+  point). When both are present, each is range-validated the same way every other source's
+  venue is (`Venue`'s own `createVenue`, `packages/domain/src/types/venue.ts`) — no geocoding
+  is performed; a curator supplies real coordinates directly, the same as any other field.
 
 Nothing here is ever invented — a missing optional field is simply omitted from the
 resulting `CanonicalEvent`, never defaulted to a guessed value.

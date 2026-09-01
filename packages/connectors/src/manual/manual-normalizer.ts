@@ -84,6 +84,15 @@ export function normalizeManualEvent(
     return { ok: false, reason: "Manual event priceValue must be a non-negative number" };
   }
 
+  // M10.2 Phase C — both or neither, never one alone: a lone coordinate is worse than none
+  // (it would place a marker at an unintended point, e.g. the equator/prime meridian if the
+  // missing half defaulted to 0), so it's rejected outright rather than silently dropped.
+  // Range validation (-90..90 / -180..180) is Venue's own job (createVenue, called below) —
+  // not duplicated here.
+  if ((dto.latitude !== undefined) !== (dto.longitude !== undefined)) {
+    return { ok: false, reason: "Manual event must provide both latitude and longitude, or neither" };
+  }
+
   const id = `${context.sourceId}-${externalId}`;
 
   try {
@@ -189,6 +198,8 @@ function buildVenue(venueName: string, dto: ManualEventDto): Venue {
     ...(dto.neighborhood ? { neighborhood: dto.neighborhood } : {}),
     city: "Porto Alegre",
     state: "RS",
+    ...(dto.latitude !== undefined ? { latitude: dto.latitude } : {}),
+    ...(dto.longitude !== undefined ? { longitude: dto.longitude } : {}),
   });
 }
 

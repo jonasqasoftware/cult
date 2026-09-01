@@ -49,6 +49,65 @@ describe("UI demo dataset image assets", () => {
   });
 });
 
+// M10.2 Phase C — cheap, no-DB checks straight against the dataset file.
+describe("UI demo dataset geo coverage", () => {
+  const feed = JSON.parse(readFileSync(datasetPath, "utf8")) as {
+    events: readonly { id: string; latitude?: number; longitude?: number }[];
+  };
+
+  it("still has exactly 10 events", () => {
+    expect(feed.events).toHaveLength(10);
+  });
+
+  it("never has a partial lat/lng pair (both present or both absent)", () => {
+    for (const event of feed.events) {
+      const hasLat = event.latitude !== undefined;
+      const hasLng = event.longitude !== undefined;
+      expect(hasLat, `${event.id}: latitude/longitude must both be present or both absent`).toBe(hasLng);
+    }
+  });
+
+  it("has geo on most events (9 of 10) and deliberately not on all — one still exercises the no-location map/card path", () => {
+    const withGeo = feed.events.filter((event) => event.latitude !== undefined).length;
+    expect(withGeo).toBe(9);
+    expect(feed.events.find((event) => event.latitude === undefined)?.id).toBe("encontro-cultural-na-orla");
+  });
+
+  it("every present coordinate is within a valid range and a plausible Porto Alegre location", () => {
+    for (const event of feed.events) {
+      if (event.latitude === undefined) continue;
+      expect(event.latitude).toBeGreaterThanOrEqual(-90);
+      expect(event.latitude).toBeLessThanOrEqual(90);
+      expect(event.longitude).toBeGreaterThanOrEqual(-180);
+      expect(event.longitude).toBeLessThanOrEqual(180);
+      // Loose sanity bounds for "somewhere in/around Porto Alegre" — not a claim of an exact
+      // real address (docs/quality/UI_DEMO_DATASET.md: coordinates are synthetic/approximate).
+      expect(event.latitude).toBeGreaterThan(-31);
+      expect(event.latitude).toBeLessThan(-29);
+      expect(event.longitude!).toBeGreaterThan(-52);
+      expect(event.longitude!).toBeLessThan(-51);
+    }
+  });
+});
+
+describe("UI demo dataset ticket URLs", () => {
+  const feed = JSON.parse(readFileSync(datasetPath, "utf8")) as {
+    events: readonly { id: string; sourceUrl?: string; ticketUrl?: string }[];
+  };
+
+  it("never presents a fictional ticket destination — no event carries a ticketUrl", () => {
+    for (const event of feed.events) {
+      expect(event.ticketUrl, `${event.id} should not have a ticketUrl (fictional demo content)`).toBeUndefined();
+    }
+  });
+
+  it("still preserves sourceUrl on every event for provenance", () => {
+    for (const event of feed.events) {
+      expect(event.sourceUrl, `${event.id} is missing sourceUrl`).toBeTruthy();
+    }
+  });
+});
+
 describe("runDemoSeed (fixture, PostgreSQL)", () => {
   const connection = connectTestDatabase();
 
@@ -81,6 +140,21 @@ describe("runDemoSeed (fixture, PostgreSQL)", () => {
 
     const noImage = await repository.findById("ui-demo-encontro-cultural-na-orla");
     expect(noImage?.imageUrl).toBeUndefined();
+    // Also the one event deliberately without geo — see "UI demo dataset geo coverage" above.
+    expect(noImage?.venue?.latitude).toBeUndefined();
+    expect(noImage?.venue?.longitude).toBeUndefined();
+
+    // Geo persisted correctly onto the Venue for a geotagged event.
+    expect(jazz?.venue?.latitude).toBe(-30.028);
+    expect(jazz?.venue?.longitude).toBe(-51.238);
+
+    // Neither of the two events that previously carried a fictional ticketUrl should expose
+    // one now (section 2/3) — "Ver ingresso" is purely data-driven, so removing it from the
+    // dataset is sufficient; no component change was needed.
+    const noiteIndie = await repository.findById("ui-demo-noite-indie-no-centro");
+    expect(noiteIndie?.ticketUrl).toBeUndefined();
+    const teatro = await repository.findById("ui-demo-teatro-na-cidade-baixa");
+    expect(teatro?.ticketUrl).toBeUndefined();
 
     // adapter is otherwise exercised indirectly via runDemoSeed above; this just confirms its
     // own sourceId matches what the ingestion summary reports.

@@ -108,4 +108,47 @@ describe("normalizeManualEvent", () => {
     if (!result.ok) throw new Error("expected ok");
     expect(result.event.sources[0]?.confidence).toBeGreaterThan(0.9);
   });
+
+  // M10.2 Phase C
+  describe("optional venue geo (latitude/longitude)", () => {
+    it("normalizes fine with neither latitude nor longitude present (unchanged default)", () => {
+      const result = normalizeManualEvent(baseDto(), CONTEXT);
+      expect(result.ok).toBe(true);
+      if (!result.ok) throw new Error("expected ok");
+      expect(result.event.venue?.latitude).toBeUndefined();
+      expect(result.event.venue?.longitude).toBeUndefined();
+    });
+
+    it("persists both coordinates onto the Venue when both are present and valid", () => {
+      const result = normalizeManualEvent(baseDto({ latitude: -30.03, longitude: -51.23 }), CONTEXT);
+      expect(result.ok).toBe(true);
+      if (!result.ok) throw new Error("expected ok");
+      expect(result.event.venue?.latitude).toBe(-30.03);
+      expect(result.event.venue?.longitude).toBe(-51.23);
+    });
+
+    it("rejects latitude without longitude", () => {
+      const result = normalizeManualEvent(baseDto({ latitude: -30.03 }), CONTEXT);
+      expect(result.ok).toBe(false);
+      if (result.ok) throw new Error("expected rejected");
+      expect(result.reason).toMatch(/latitude and longitude/i);
+    });
+
+    it("rejects longitude without latitude", () => {
+      const result = normalizeManualEvent(baseDto({ longitude: -51.23 }), CONTEXT);
+      expect(result.ok).toBe(false);
+      if (result.ok) throw new Error("expected rejected");
+      expect(result.reason).toMatch(/latitude and longitude/i);
+    });
+
+    it("rejects an out-of-range latitude", () => {
+      const result = normalizeManualEvent(baseDto({ latitude: 999, longitude: -51.23 }), CONTEXT);
+      expect(result.ok).toBe(false);
+    });
+
+    it("rejects an out-of-range longitude", () => {
+      const result = normalizeManualEvent(baseDto({ latitude: -30.03, longitude: -300 }), CONTEXT);
+      expect(result.ok).toBe(false);
+    });
+  });
 });

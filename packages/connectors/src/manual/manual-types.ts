@@ -17,6 +17,12 @@ export interface ManualEventDto {
   readonly venueName?: string;
   readonly address?: string;
   readonly neighborhood?: string;
+  // M10.2 Phase C — optional; both or neither, never one alone (the normalizer rejects a
+  // partial pair rather than silently dropping it). No geocoding: a curator (or a synthetic
+  // dataset like test-data/ui-demo/) supplies real/approximate coordinates directly, the
+  // normalizer never derives them from address/neighborhood text.
+  readonly latitude?: number;
+  readonly longitude?: number;
   readonly categories?: readonly string[];
   readonly free?: boolean;
   readonly priceValue?: number;

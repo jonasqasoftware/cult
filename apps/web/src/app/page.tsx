@@ -71,14 +71,11 @@ export default async function HomePage({ searchParams }: HomePageProps) {
       ) : events && events.data.length === 0 ? (
         <EmptyState hasFilters={hasActiveFilters} />
       ) : events ? (
+        // ResultsView itself stays mounted across filter navigations (no filters-derived key
+        // here) so the user's Lista/Mapa preference survives a filter change — it internally
+        // keys its own query-bound child (QueryResults) on the filters, which is what resets
+        // stale results/pagination correctly. See ResultsView.tsx and QueryResults.tsx.
         <ResultsView
-          // Forces a remount when the query filters actually change (App Router preserves
-          // this Client Component instance across navigations between filter states, so its
-          // internal `useState(initialEvents)` would otherwise keep rendering stale results
-          // — the new SSR props arrive but are never re-read after the first mount). Cursor
-          // is excluded so "Carregar mais" (which only changes cursor) keeps appending to the
-          // same mounted instance instead of resetting it.
-          key={buildDiscoveryHref(filters, { includeCursor: false })}
           initialEvents={events.data}
           initialNextCursor={events.pagination.next_cursor}
           filters={filters}

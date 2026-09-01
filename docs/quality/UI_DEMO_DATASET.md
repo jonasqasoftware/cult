@@ -44,9 +44,18 @@ before deciding whether/what to change visually (Phase B, not part of this miles
   combination appears at least once.
 - **Images**: 9 events with a real, loadable local SVG cover; 1 (Encontro Cultural na Orla)
   with no image at all, to compare against the fallback placeholder honestly.
+- **Geo** (M10.2 Phase C): 9 events carry a synthetic, approximate `latitude`/`longitude` so
+  the map view actually shows markers; Encontro Cultural na Orla deliberately has neither
+  (the same event that also has no image), continuing to exercise the no-location path on
+  both the card grid and the map. Coordinates are loosely placed within the stated
+  neighborhood/region (Orla, Cidade Baixa, Zona Sul, Centro Histórico) — **not** real,
+  precise addresses; no fictional event is presented as occupying an exact real building.
 - **Categories** (8, deliberately not 10 — see section 8 of the milestone spec): Show de
   música, Cinema, Cultural, Exposição, Literatura, Teatro e Artes, Passeio Cultural,
   Gastronomia.
+- **Ticket CTA**: no event carries a `ticketUrl` (see the Phase C entry below) — every demo
+  event's "Ver ingresso" button is therefore absent, which is correct: there is no real
+  ticket destination to send anyone to.
 
 8 original SVG cover assets in `apps/web/public/demo-events/`
 (`demo-music.svg`, `demo-cinema.svg`, `demo-fair.svg`, `demo-exhibition.svg`,
@@ -73,6 +82,39 @@ via a new `presentSourceLabel` formatter (`apps/web/src/lib/format/source.ts`): 
 "Conteúdo demonstrativo CULT" (deliberately not "CULT" or "Curadoria CULT" — this is fictional,
 development/demo-only content and must never read as real CULT curation). An unrecognized
 source id still falls back to the raw id, same transparency principle as category labels.
+
+**Ticket CTA pointed at a fictional destination — resolved in M10.2 Phase C.** Two demo events
+(Noite Indie no Centro, Teatro na Cidade Baixa) carried a `ticketUrl` of
+`https://example.org/cult-demo/ingressos/...`, so their detail pages showed a "Ver ingresso"
+button that led nowhere real — worse than showing no button at all. `TrackedLink`/the detail
+page were **not** changed (this was purely a data problem, confirmed by inspecting both real
+connectors: Ticketmaster's `ticketUrl` is its own event page URL — genuinely a ticket
+destination per Ticketmaster's API contract — and Destino POA's is `externalUrl`, an explicit,
+separate "official external link" field; neither needed a fix). The fictional `ticketUrl` was
+simply removed from both demo events; `sourceUrl` (provenance) is untouched.
+
+**Map showed zero demo markers — resolved in M10.2 Phase C.** `ManualEventDto`
+(`packages/connectors/src/manual/manual-types.ts`, shared by `manual-beta` and `ui-demo`) had
+no `latitude`/`longitude` fields at all, so no manual-shaped event — demo or otherwise — could
+ever produce a map marker; `ResultsView`/`MapView` were already filtering/rendering correctly.
+Added optional `latitude`/`longitude` to the DTO and the normalizer (both required together,
+range-validated by the same `createVenue` the domain already uses for every other source — see
+`packages/connectors/src/manual/manual-normalizer.test.ts`), then added synthetic coordinates
+to 9 of the 10 demo events (see "O que contém" above). No geocoding was added — coordinates
+must be supplied directly, exactly like every other field a curator provides.
+
+**A real, unrelated bug found while investigating this — documented, not fixed.** Ticketmaster
+and Destino POA's golden fixtures both include an event at a venue named "Praça da Alfândega".
+Neither normalizer is given (or invents) a source-specific venue id for it, so both fall back
+to the same deterministic `venue-${slug(name)}` id — and whichever source's ingestion runs
+*second* silently overwrites the shared `venues` row, including its `latitude`/`longitude`
+(Ticketmaster's "Feira Gratuita do Centro" has real geo in isolation; ingest Destino POA
+afterward and it's gone, because Destino POA's own venue-building for the same place carries no
+geo at all). This is a real, pre-existing cross-source venue-identity collision, not something
+introduced by the UI Demo Dataset or this phase's changes — and out of scope for M10.2 Phase C,
+which is data/view-state hardening only, not a venue-identity redesign. Filed here so it isn't
+lost: a real fix needs a source-namespaced venue id (or an actual venue-dedup pass), not a
+patch local to one connector.
 
 **Page 1 doesn't show all 10 demo events without "Carregar mais" — not corrected.** Home's
 first page uses `PAGE_SIZE = 12` (`apps/web/src/app/page.tsx`); interleaved chronologically
