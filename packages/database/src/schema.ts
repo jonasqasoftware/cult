@@ -219,3 +219,25 @@ export const dedupCandidates = pgTable(
     index("dedup_candidates_status_idx").on(table.status),
   ],
 );
+
+// M10 sections 25-27 — first-party, minimal, privacy-safe product analytics. eventId is
+// deliberately NOT a foreign key: an analytics write must never fail (or be rejected) just
+// because the referenced event was later removed/changed, and analytics is explicitly
+// best-effort/non-blocking (section 29) — it must never gain the power to fail a request
+// for reasons unrelated to analytics itself. metadataJson only ever holds allowlisted keys
+// (packages/database/src/analytics/allowlist.ts) — enforced by the writer, not by the
+// column, since Postgres jsonb can't itself express an allowlist.
+export const analyticsEvents = pgTable(
+  "analytics_events",
+  {
+    id: text("id").primaryKey(),
+    eventName: text("event_name").notNull(),
+    eventId: text("event_id"),
+    metadataJson: jsonb("metadata_json").notNull().$type<Record<string, string | number | boolean>>(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    index("analytics_events_event_name_idx").on(table.eventName),
+    index("analytics_events_created_at_idx").on(table.createdAt),
+  ],
+);

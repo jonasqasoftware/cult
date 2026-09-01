@@ -3,9 +3,11 @@ import type { Metadata } from "next";
 import { getEvent } from "../../../lib/api/client";
 import { formatOccurrence, formatPrice, presentCategoryLabelFromId, presentStatusLabel } from "../../../lib/format/index";
 import { buildEventJsonLd } from "../../../lib/schema/event-jsonld";
+import { AnalyticsPageView } from "../../../components/AnalyticsPageView";
 import { EventImage } from "../../../components/EventImage";
 import { EventMapSection } from "../../../components/EventMapSection";
 import { ShareButton } from "../../../components/ShareButton";
+import { TrackedLink } from "../../../components/TrackedLink";
 import styles from "./page.module.css";
 
 function getSiteUrl(): string {
@@ -60,6 +62,7 @@ export default async function EventDetailPage({ params }: EventPageProps) {
       {/* Schema.org JSON-LD — content is built entirely from the public API contract via
           buildEventJsonLd, never raw HTML from any external source. */}
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      <AnalyticsPageView event="event_view" eventId={event.id} />
 
       <EventImage src={event.image_url} alt="" />
 
@@ -89,9 +92,16 @@ export default async function EventDetailPage({ params }: EventPageProps) {
               {[event.venue.neighborhood, event.venue.city].filter(Boolean).join(", ")}
             </p>
             {mapsUrl ? (
-              <a href={mapsUrl} target="_blank" rel="noopener noreferrer" className={styles.mapLink}>
+              <TrackedLink
+                event="maps_click"
+                eventId={event.id}
+                href={mapsUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={styles.mapLink}
+              >
                 Ver no mapa
-              </a>
+              </TrackedLink>
             ) : null}
           </section>
         ) : null}
@@ -111,11 +121,18 @@ export default async function EventDetailPage({ params }: EventPageProps) {
 
         <div className={styles.actions}>
           {event.ticket_url ? (
-            <a href={event.ticket_url} target="_blank" rel="noopener noreferrer" className={styles.ticketButton}>
+            <TrackedLink
+              event="ticket_click"
+              eventId={event.id}
+              href={event.ticket_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={styles.ticketButton}
+            >
               Ver ingresso
-            </a>
+            </TrackedLink>
           ) : null}
-          <ShareButton title={event.title} url={url} />
+          <ShareButton title={event.title} url={url} eventId={event.id} />
         </div>
 
         {event.sources.length > 0 ? (

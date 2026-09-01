@@ -39,6 +39,21 @@ describe("loadAppEnv", () => {
         .ticketmasterLivePersistAck,
     ).toBe(false);
   });
+
+  // M10 section 9 — CULT_ENV formalizes development/test/staging/production distinctly from
+  // NODE_ENV (which many libraries also read/set for unrelated reasons). Defaults to
+  // "development" so every existing local/CI flow keeps working unmodified.
+  it("defaults cultEnv to development when CULT_ENV is unset", () => {
+    expect(loadAppEnv({ DATABASE_URL: "postgresql://x" }).cultEnv).toBe("development");
+  });
+
+  it.each(["development", "test", "staging", "production"])("accepts CULT_ENV=%s", (value) => {
+    expect(loadAppEnv({ DATABASE_URL: "postgresql://x", CULT_ENV: value }).cultEnv).toBe(value);
+  });
+
+  it("fails startup on an invalid CULT_ENV value rather than silently defaulting it", () => {
+    expect(() => loadAppEnv({ DATABASE_URL: "postgresql://x", CULT_ENV: "prod" })).toThrow(/CULT_ENV/);
+  });
 });
 
 describe("loadDotEnvIfPresent", () => {

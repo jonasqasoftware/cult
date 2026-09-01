@@ -81,3 +81,22 @@ jobs:
           name: playwright-report
           path: playwright-report/
           retention-days: 7
+
+  docker-build:
+    # M10 section 48/58 — a Dockerfile that has never actually been built is not "done".
+    # Builds only (no push, no registry) — verifies each production image still builds on
+    # every PR/push, catching the class of bug DEPLOYMENT.md documents finding by actually
+    # running the images (standalone tracing gaps, missing package.json for symlinked
+    # workspace deps, etc.) before it reaches a real deploy.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build API image
+        run: docker build -f docker/api/Dockerfile -t cult-api:ci .
+
+      - name: Build Worker image
+        run: docker build -f docker/worker/Dockerfile -t cult-worker:ci .
+
+      - name: Build Web image
+        run: docker build -f docker/web/Dockerfile -t cult-web:ci .

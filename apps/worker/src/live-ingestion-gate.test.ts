@@ -3,6 +3,7 @@ import { checkLiveIngestionAllowed } from "./live-ingestion-gate.js";
 
 const baseEnv = {
   nodeEnv: "test",
+  cultEnv: "development",
   databaseUrl: "postgresql://x",
   apiPort: 3001,
   ticketmasterLivePersistAck: false,

@@ -1,0 +1,52 @@
+{
+  "events": [
+    {
+      "id": "sarau-vila-flores-001",
+      "title": "Sarau Cultural da Vila Flores",
+      "description": "Noite de poesia, música e teatro amador, aberta à comunidade — organizada e cadastrada diretamente pelo coletivo responsável.",
+      "startDate": "2026-11-14",
+      "startTime": "19:30",
+      "endTime": "22:00",
+      "venueName": "Centro Comunitário Vila Flores",
+      "address": "Rua das Flores, 123",
+      "neighborhood": "Cidade Baixa",
+      "categories": ["poesia", "musica"],
+      "free": true,
+      "sourceUrl": "https://example.org/cult-manual/sarau-vila-flores-001",
+      "imageUrl": "https://example.org/cult-manual/images/sarau-vila-flores.jpg",
+      "imageRightsConfirmed": true
+    },
+    {
+      "id": "feira-artesanato-redencao-002",
+      "title": "Feira de Artesanato do Parque da Redenção",
+      "startDate": "2026-11-21",
+      "endDate": "2026-11-22",
+      "venueName": "Parque Farroupilha (Redenção)",
+      "neighborhood": "Praia de Belas",
+      "categories": ["artesanato", "feira"],
+      "free": true,
+      "sourceUrl": "https://example.org/cult-manual/feira-artesanato-redencao-002"
+    },
+    {
+      "id": "oficina-ceramica-003",
+      "title": "Oficina de Cerâmica para Iniciantes",
+      "startDate": "2026-11-28",
+      "startTime": "14:00",
+      "endTime": "17:00",
+      "venueName": "Ateliê Coletivo Barro",
+      "address": "Av. Independência, 456",
+      "neighborhood": "Independência",
+      "categories": ["oficina", "artes-visuais"],
+      "free": false,
+      "priceValue": 80,
+      "sourceUrl": "https://example.org/cult-manual/oficina-ceramica-003",
+      "ticketUrl": "https://example.org/cult-manual/oficina-ceramica-003/inscricao"
+    },
+    {
+      "id": "evento-sem-local-004",
+      "title": "Evento Sem Local Cadastrado",
+      "startDate": "2026-12-01",
+      "sourceUrl": "https://example.org/cult-manual/evento-sem-local-004"
+    }
+  ]
+}

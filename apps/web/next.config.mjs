@@ -22,6 +22,19 @@ const SECURITY_HEADERS = [
 const nextConfig = {
   reactStrictMode: true,
   outputFileTracingRoot: workspaceRoot,
+  // M10 section 13 — a self-contained server bundle (.next/standalone) with only the
+  // production dependencies actually traced/used, so the Dockerfile doesn't need to ship
+  // node_modules or devDependencies at all. See docker/web/Dockerfile.
+  output: "standalone",
+  // Next's own dependency tracer (@vercel/nft) does not reliably follow the
+  // node_modules/@cult/* symlinks pnpm creates for workspace:* packages that live OUTSIDE
+  // node_modules (in packages/*) — verified by inspecting the generated .nft.json trace
+  // files, which omitted @cult/config and @cult/domain entirely despite apps/web importing
+  // both. Force-including their compiled dist output is the documented escape hatch for
+  // exactly this class of monorepo gap.
+  outputFileTracingIncludes: {
+    "/**": ["../../packages/config/dist/**", "../../packages/domain/dist/**"],
+  },
   // This repo already has a root CLAUDE.md with real project instructions — don't let
   // `next dev` regenerate an unrelated stub AGENTS.md/CLAUDE.md pair inside apps/web.
   agentRules: false,

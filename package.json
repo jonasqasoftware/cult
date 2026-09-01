@@ -27,6 +27,7 @@
     "ingest:ticketmaster": "pnpm --filter @cult/worker run ingest:ticketmaster",
     "ingest:ticketmaster:live-smoke": "pnpm --filter @cult/worker run ingest:ticketmaster:live-smoke",
     "ingest:destino-poa:fixture": "pnpm --filter @cult/worker run ingest:destino-poa:fixture",
+    "ingest:manual": "pnpm --filter @cult/worker run ingest:manual --",
     "inspect:destino-poa": "pnpm --filter @cult/worker run inspect:destino-poa",
     "dedup:dataset:summary": "pnpm --filter @cult/deduplication run dedup:dataset:summary",
     "dedup:evaluate:calibration": "pnpm --filter @cult/deduplication run dedup:evaluate:calibration",
@@ -37,7 +38,10 @@
     "dedup:review:same": "pnpm --filter @cult/worker run dedup:review:same --",
     "dedup:review:different": "pnpm --filter @cult/worker run dedup:review:different --",
     "ops:summary": "pnpm --filter @cult/worker run ops:summary",
+    "sources:production-status": "pnpm --filter @cult/worker run sources:production-status",
+    "product:summary": "pnpm --filter @cult/worker run product:summary",
     "e2e": "playwright test --config=e2e/playwright.config.ts",
+    "e2e:smoke": "playwright test --config=e2e/playwright.smoke.config.ts",
     "e2e:install": "playwright install --with-deps chromium",
     "clean": "tsc -b --clean tsconfig.json && pnpm -r --if-present run clean"
   },

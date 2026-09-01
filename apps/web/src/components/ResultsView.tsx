@@ -2,6 +2,7 @@
 
 import dynamic from "next/dynamic";
 import { useId, useState } from "react";
+import { track } from "../lib/analytics/track";
 import type { CultEvent, DiscoveryFilters } from "../lib/api/types";
 import { EventCard } from "./EventCard";
 import styles from "./ResultsView.module.css";
@@ -78,7 +79,10 @@ export function ResultsView({ initialEvents, initialNextCursor, filters, categor
             className={styles.toggleButton}
             aria-pressed={view === "map"}
             data-active={view === "map" || undefined}
-            onClick={() => setView("map")}
+            onClick={() => {
+              track("map_opened");
+              setView("map");
+            }}
           >
             Mapa
           </button>

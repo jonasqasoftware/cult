@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { track } from "../lib/analytics/track";
 import type { DiscoveryFilters } from "../lib/api/types";
 import { buildDiscoveryHref, omitFilters } from "../lib/url/discovery-query";
 import styles from "./FilterChips.module.css";
@@ -29,6 +30,7 @@ export function NearbyButton({ filters }: { filters: DiscoveryFilters }) {
       return;
     }
 
+    track("nearby_used");
     setStatus("locating");
     navigator.geolocation.getCurrentPosition(
       (position) => {

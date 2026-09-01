@@ -12,6 +12,10 @@ const API_BASE_URL = `http://localhost:${API_PORT}`;
 
 export default defineConfig({
   testDir: "./tests",
+  // smoke.spec.ts targets a configurable, already-running environment (M10 section 46) via
+  // playwright.smoke.config.ts / `pnpm e2e:smoke` — kept out of this suite so it isn't run
+  // twice against two different configs by a plain `pnpm e2e`.
+  testIgnore: "smoke.spec.ts",
   fullyParallel: true,
   forbidOnly: !!process.env["CI"],
   retries: process.env["CI"] ? 1 : 0,

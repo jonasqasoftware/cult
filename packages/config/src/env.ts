@@ -21,14 +21,36 @@ export function loadDotEnvIfPresent(fileName = ".env"): void {
   }
 }
 
+// M10 section 9 — formalizes the release environment distinctly from NODE_ENV (which many
+// libraries also read/set, for build-mode reasons unrelated to "which deployed environment
+// is this"). Not inferred from NODE_ENV: the two answer different questions, and conflating
+// them is exactly what section 9 warns against.
+export type CultEnv = "development" | "test" | "staging" | "production";
+
+const VALID_CULT_ENVS: readonly CultEnv[] = ["development", "test", "staging", "production"];
+
+function parseCultEnv(raw: string | undefined): CultEnv {
+  const value = raw ?? "development";
+  if (!(VALID_CULT_ENVS as readonly string[]).includes(value)) {
+    throw new Error(
+      `CULT_ENV must be one of ${VALID_CULT_ENVS.join("|")}, got "${value}". Fix the environment ` +
+        "rather than letting an unrecognized value pass through silently.",
+    );
+  }
+  return value as CultEnv;
+}
+
 export interface AppEnv {
   readonly nodeEnv: string;
+  readonly cultEnv: CultEnv;
   readonly databaseUrl: string;
   readonly apiPort: number;
   readonly ticketmasterApiKey?: string;
   // Must be exactly "true" to allow a live (non-fixture) Ticketmaster ingestion to persist
   // data — see docs/sources/ticketmaster.md and ADR-0013. Retention for real Event Content
-  // is not yet legally/commercially cleared, so persistence stays blocked by default.
+  // is not yet legally/commercially cleared, so persistence stays blocked by default. This
+  // is a DEVELOPMENT control-flow acknowledgement only — it is never treated as production
+  // legal/commercial authorization (see production-config.ts / ADR-0015).
   readonly ticketmasterLivePersistAck: boolean;
 }
 
@@ -44,6 +66,7 @@ export function loadAppEnv(env: NodeJS.ProcessEnv = process.env): AppEnv {
 
   return {
     nodeEnv: env["NODE_ENV"] ?? "development",
+    cultEnv: parseCultEnv(env["CULT_ENV"]),
     databaseUrl,
     apiPort: Number(env["API_PORT"] ?? 3001),
     ...(ticketmasterApiKey ? { ticketmasterApiKey } : {}),

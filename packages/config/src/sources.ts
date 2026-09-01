@@ -58,6 +58,36 @@ export const DESTINO_POA_SOURCE_DEFINITION = createSourceDefinition({
     "commercialUse=unknown per docs/sources/destino-poa.md — no reuse/licensing terms found yet; do not change to 'allowed' without a documented rights review. Live persistence is not implemented in M3 (fixture-only) — see docs/sources/destino-poa.md.",
 });
 
+// M10 section 42 — the fallback beta source: every event ingested through it is entered by
+// a human who already holds the rights to the content (their own listing, or factual
+// information they're authorized to publish), so commercialUse is genuinely "allowed" here
+// — this is not a relaxation of Ticketmaster/Destino POA's licensing, it is a different
+// source with a different rights basis. See docs/sources/manual-beta.md.
+export const MANUAL_BETA_SOURCE_DEFINITION = createSourceDefinition({
+  id: "manual-beta",
+  name: "Manual (Beta Curated Events)",
+  type: "manual",
+  enabled: true,
+  // No polling — ingestion is a human-triggered `pnpm ingest:manual <file>`, not a
+  // scheduled collector. The field is still required by SourceDefinition, so this is a
+  // large, clearly-arbitrary placeholder rather than a value implying real polling.
+  pollingIntervalMinutes: 1440,
+  authorityScore: 0.6,
+  commercialUse: "allowed",
+  connector: "manual",
+  notes:
+    "commercialUse=allowed because every event is human-curated with confirmed rights — see docs/sources/manual-beta.md. Not a template for relaxing an automated connector's commercialUse.",
+});
+
+// The single source of truth for "every source CULT knows about" — used by the development
+// registry below and by `pnpm sources:production-status` (apps/worker/src/commands/
+// sources-production-status.ts) so a new connector only has to be added here once.
+export const ALL_SOURCE_DEFINITIONS = [
+  TICKETMASTER_SOURCE_DEFINITION,
+  DESTINO_POA_SOURCE_DEFINITION,
+  MANUAL_BETA_SOURCE_DEFINITION,
+];
+
 export function createDevelopmentSourceRegistry(): SourceRegistryPort {
-  return createInMemorySourceRegistry([TICKETMASTER_SOURCE_DEFINITION, DESTINO_POA_SOURCE_DEFINITION]);
+  return createInMemorySourceRegistry(ALL_SOURCE_DEFINITIONS);
 }

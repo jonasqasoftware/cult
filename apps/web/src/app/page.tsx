@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { discoverEvents, listCategories } from "../lib/api/client";
 import { buildCategoryLabelMap } from "../lib/format/category";
 import { buildDiscoveryHref, searchParamsToFilters } from "../lib/url/discovery-query";
+import { AnalyticsPageView } from "../components/AnalyticsPageView";
 import { EmptyState } from "../components/EmptyState";
 import { ErrorState } from "../components/ErrorState";
 import { FilterBar } from "../components/FilterBar";
@@ -44,8 +45,24 @@ export default async function HomePage({ searchParams }: HomePageProps) {
   const categoryLabelsById = Object.fromEntries(buildCategoryLabelMap(categories));
   const hasActiveFilters = Object.keys(filters).length > 0;
 
+  // Section 25/28 — SearchForm/CategoryChips/FreeShortcut are deliberately plain
+  // server-rendered <form>/<Link> elements with no client JS of their own (progressive
+  // enhancement, works with JS disabled). Rather than adding onClick handlers that would
+  // force them into client components, page_view/search/filter_used are observed here, from
+  // the RESULTING page's own filters — an equally accurate signal with zero extra JS on the
+  // controls themselves.
+  const pageViewMetadata: Record<string, string | boolean> = {};
+  if (filters.period) pageViewMetadata["period"] = filters.period;
+  if (filters.category) pageViewMetadata["category"] = filters.category;
+  if (filters.free !== undefined) pageViewMetadata["free"] = filters.free;
+
   return (
     <div className={styles.page}>
+      <AnalyticsPageView event="page_view" metadata={pageViewMetadata} />
+      {filters.q ? <AnalyticsPageView event="search" /> : null}
+      {filters.category || filters.free !== undefined ? (
+        <AnalyticsPageView event="filter_used" metadata={pageViewMetadata} />
+      ) : null}
       <Hero filters={filters} />
       <FilterBar filters={filters} categories={categories} />
 

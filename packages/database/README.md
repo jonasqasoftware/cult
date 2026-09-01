@@ -150,6 +150,18 @@ destructive provenance move. It only decides which of a same-event pair to *show
   reachable — only `GET /v1/events` (discovery/listing) is affected. No redirect was
   added without an explicit architectural decision to do so (M9 section 23).
 
+### Suppression performance at synthetic scale (M10)
+
+`apps/worker/src/commands/perf-check-dedup.ts` is a manually-run (not CI, not a permanent
+benchmark suite) measurement tool: seeds a synthetic dataset, times
+`computeSuppressedEventIds` and `discoverEvents(..., { excludeEventIds })`, and cleans up
+after itself. At 2,000 synthetic events / 300 suppressing pairs (600 events involved — far
+above the current real dataset size), `computeSuppressedEventIds` took ~93ms and
+`discoverEvents` with all 300 ids in its `NOT IN` clause took ~16ms. No objective problem was
+found, so no caching/optimization was added (M10 section 37: "não criar cache antes de
+medir"). Re-run with `PERF_EVENT_COUNT`/`PERF_SUPPRESSING_PAIRS` env vars if the real dataset
+grows enough to warrant re-checking.
+
 ### Ops summary (`src/ops/summary.ts`)
 
 `computeOpsSummary(db)` — honestly-available metrics only, no invented uptime or health

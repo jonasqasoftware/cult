@@ -1,4 +1,5 @@
 import Fastify, { type FastifyInstance } from "fastify";
+import { validateAnalyticsEvent } from "@cult/domain";
 import {
   computeSuppressedEventIds,
   createCanonicalEventRepository,
@@ -6,6 +7,7 @@ import {
   InvalidDiscoveryCursorError,
   listCategoryIds,
   ping,
+  recordAnalyticsEvent,
   type Database,
 } from "@cult/database";
 import { toEventResponse } from "./events-response.js";
@@ -117,6 +119,58 @@ export function buildServer(options: BuildServerOptions): FastifyInstance {
     return {
       data: categoryIds.map((id) => ({ id, name: id, slug: id })),
     };
+  });
+
+  // M10 sections 25-28: first-party, minimal, best-effort product analytics. `bodyLimit`
+  // is far below Fastify's 1MB default — a legitimate analytics event never needs more than
+  // a handful of allowlisted fields, so a much smaller cap costs nothing and blocks abuse.
+  // Not `/v1/dedup/...`-style operational surface (M9's ban stays specific to that): this is
+  // a normal, write-only product telemetry endpoint, documented in openapi/cult-api.yaml.
+  app.post("/v1/analytics", { bodyLimit: 4096 }, async (request, reply) => {
+    const body = (request.body ?? {}) as Record<string, unknown>;
+    const eventName = typeof body["event_name"] === "string" ? body["event_name"] : "";
+    const eventIdRaw = body["event_id"];
+    const metadata =
+      body["metadata"] && typeof body["metadata"] === "object"
+        ? (body["metadata"] as Record<string, unknown>)
+        : {};
+
+    const validation = validateAnalyticsEvent({
+      eventName,
+      ...(eventIdRaw !== undefined ? { eventId: eventIdRaw as string } : {}),
+      metadata,
+    });
+
+    if (!validation.valid) {
+      return reply.code(400).type("application/problem+json").send({
+        type: "/problems/invalid-analytics-event",
+        title: "Invalid analytics event",
+        status: 400,
+        detail: validation.reason,
+      });
+    }
+
+    try {
+      await recordAnalyticsEvent(db, {
+        eventName: validation.eventName,
+        ...(validation.eventId !== undefined ? { eventId: validation.eventId } : {}),
+        metadata: validation.metadata,
+      });
+    } catch (error) {
+      // Section 29: analytics is best-effort and must never impede other product flows —
+      // but a failure of THIS endpoint's own job (persisting the event) is still worth
+      // logging server-side for someone to notice, even though the caller (the Web BFF)
+      // treats any non-2xx here as "fine, move on" rather than surfacing it to the user.
+      request.log.error({ err: error }, "failed to record analytics event");
+      return reply.code(500).type("application/problem+json").send({
+        type: "/problems/internal-error",
+        title: "Internal server error",
+        status: 500,
+        detail: "An unexpected error occurred",
+      });
+    }
+
+    return reply.code(202).send();
   });
 
   app.get("/v1/events/:slug", async (request, reply) => {

@@ -56,6 +56,12 @@ importers:
 
   apps/web:
     dependencies:
+      '@cult/config':
+        specifier: workspace:*
+        version: link:../../packages/config
+      '@cult/domain':
+        specifier: workspace:*
+        version: link:../../packages/domain
       maplibre-gl:
         specifier: 6.6.0
         version: 6.6.0
@@ -96,6 +102,9 @@ importers:
       '@cult/domain':
         specifier: workspace:*
         version: link:../../packages/domain
+      drizzle-orm:
+        specifier: ^0.45.2
+        version: 0.45.2(@types/pg@8.23.1)(pg@8.23.0)
 
   e2e:
     dependencies:

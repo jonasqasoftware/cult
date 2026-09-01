@@ -29,6 +29,13 @@
       "when": 1788267296246,
       "tag": "0003_dedup_candidates",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1788271615322,
+      "tag": "0004_analytics_events",
+      "breakpoints": true
     }
   ]
 }

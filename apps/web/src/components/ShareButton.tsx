@@ -1,14 +1,16 @@
 "use client";
 
 import { useState } from "react";
+import { track } from "../lib/analytics/track";
 import styles from "./ShareButton.module.css";
 
 // M8 section 45. Web Share API when available (mobile-first — this is where it matters
 // most), falling back to copying the link with an accessible confirmation otherwise.
-export function ShareButton({ title, url }: { title: string; url: string }) {
+export function ShareButton({ title, url, eventId }: { title: string; url: string; eventId?: string }) {
   const [copied, setCopied] = useState(false);
 
   async function handleShare() {
+    track("share", eventId ? { eventId } : {});
     if (typeof navigator !== "undefined" && navigator.share) {
       try {
         await navigator.share({ title, url });

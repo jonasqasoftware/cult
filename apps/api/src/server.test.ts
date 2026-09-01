@@ -11,6 +11,7 @@ import {
   type EventPrice,
 } from "@cult/domain";
 import {
+  computeProductSummary,
   createCanonicalEventRepository,
   createDatabaseConnection,
   normalizePair,
@@ -486,5 +487,60 @@ describe("GET /v1/events/:slug — occurrence kinds", () => {
       timezone: "America/Sao_Paulo",
       status: "scheduled",
     });
+  });
+});
+
+describe("POST /v1/analytics", () => {
+  it("accepts a well-formed event and persists it", async () => {
+    const response = await app.inject({
+      method: "POST",
+      url: "/v1/analytics",
+      payload: { event_name: "filter_used", metadata: { period: "weekend" } },
+    });
+    expect(response.statusCode).toBe(202);
+
+    const summary = await computeProductSummary(connection.db);
+    expect(summary.counts.filter_used).toBe(1);
+  });
+
+  it("rejects an unknown event_name with 400, and does not persist it", async () => {
+    const response = await app.inject({
+      method: "POST",
+      url: "/v1/analytics",
+      payload: { event_name: "totally_made_up" },
+    });
+    expect(response.statusCode).toBe(400);
+    expect(response.headers["content-type"]).toContain("application/problem+json");
+
+    const summary = await computeProductSummary(connection.db);
+    const totalPersisted = Object.values(summary.counts).reduce((sum, count) => sum + count, 0);
+    expect(totalPersisted).toBe(0);
+  });
+
+  it("rejects a non-allowlisted metadata key with 400", async () => {
+    const response = await app.inject({
+      method: "POST",
+      url: "/v1/analytics",
+      payload: { event_name: "nearby_used", metadata: { latitude: -30.03 } },
+    });
+    expect(response.statusCode).toBe(400);
+  });
+
+  it("rejects an oversized payload", async () => {
+    const response = await app.inject({
+      method: "POST",
+      url: "/v1/analytics",
+      payload: { event_name: "search", metadata: { category: "x".repeat(10_000) } },
+    });
+    expect(response.statusCode).toBeGreaterThanOrEqual(400);
+  });
+
+  it("accepts an event scoped to an eventId", async () => {
+    const response = await app.inject({
+      method: "POST",
+      url: "/v1/analytics",
+      payload: { event_name: "event_view", event_id: "evt-timed" },
+    });
+    expect(response.statusCode).toBe(202);
   });
 });

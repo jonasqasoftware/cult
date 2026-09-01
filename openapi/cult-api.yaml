@@ -134,6 +134,34 @@ paths:
                 $ref: "#/components/schemas/Event"
         "404":
           $ref: "#/components/responses/Problem"
+  /v1/analytics:
+    post:
+      summary: Record a first-party product analytics event
+      description: >-
+        M10 sections 25-28. First-party, minimal, best-effort product telemetry — never
+        precise geolocation, never anything that could re-identify a specific
+        request/device. Called by apps/web's own `/api/analytics` BFF route server-side, not
+        directly by the browser. `metadata` accepts only an explicit allowlisted set of keys
+        (see AnalyticsMetadata below); an unlisted key is rejected (400), never silently
+        dropped. Not an operational/administrative endpoint like M9's banned
+        `POST /v1/dedup/...` — this never mutates product/discovery state, only appends a
+        telemetry row.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AnalyticsEventInput"
+      responses:
+        "202":
+          description: Event accepted
+        "400":
+          $ref: "#/components/responses/Problem"
+        "413":
+          description: Payload too large
+        "500":
+          $ref: "#/components/responses/Problem"
+
   /v1/categories:
     get:
       summary: List event categories
@@ -352,6 +380,37 @@ components:
           type: string
         slug:
           type: string
+
+    AnalyticsEventInput:
+      type: object
+      required: [event_name]
+      properties:
+        event_name:
+          type: string
+          enum:
+            - page_view
+            - event_view
+            - search
+            - filter_used
+            - nearby_used
+            - map_opened
+            - share
+            - ticket_click
+            - maps_click
+        event_id:
+          type: string
+          description: Optional — the CanonicalEvent this event relates to, when applicable.
+        metadata:
+          type: object
+          description: >-
+            Only allowlisted keys are accepted: period, category, free. Any other key is
+            rejected with 400, never silently dropped. Never latitude/longitude or any other
+            precise/re-identifying value.
+          additionalProperties:
+            oneOf:
+              - type: string
+              - type: number
+              - type: boolean
 
     ProblemDetails:
       type: object

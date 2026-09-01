@@ -1,8 +1,13 @@
-import { loadAppEnv, loadDotEnvIfPresent } from "@cult/config";
+import { assertProductionConfig, loadAppEnv, loadDotEnvIfPresent } from "@cult/config";
 import { createDatabaseConnection } from "@cult/database";
 import { buildServer } from "./server.js";
 
 loadDotEnvIfPresent();
+
+// M10 section 10 — fail closed at startup rather than serving traffic against config that
+// silently fell back to a development default (e.g. a forgotten localhost URL).
+assertProductionConfig();
+
 const env = loadAppEnv();
 const host = process.env["API_HOST"] ?? "0.0.0.0";
 

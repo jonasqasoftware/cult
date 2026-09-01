@@ -22,3 +22,7 @@ export * from "./dedup/suppression.js";
 
 // M9: honest, real operational metrics — see ops/summary.ts.
 export * from "./ops/summary.js";
+
+// M10: first-party product analytics persistence — see analytics/*.
+export * from "./analytics/record-event.js";
+export * from "./analytics/summary.js";

@@ -1,0 +1,17 @@
+node_modules
+**/node_modules
+**/dist
+**/.next
+**/*.tsbuildinfo
+.git
+.github
+docs
+docker/postgres
+e2e
+test-results
+playwright-report
+coverage
+*.log
+.env
+.env.*
+!.env.example

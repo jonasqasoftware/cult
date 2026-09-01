@@ -18,3 +18,9 @@ export * from "./ports/canonical-event-repository-port.js";
 export * from "./ports/source-registry-port.js";
 
 export * from "./registry/in-memory-source-registry.js";
+
+// M10: the Production Data Gate — see production-data-gate.ts.
+export * from "./production-data-gate.js";
+
+// M10: shared analytics event-name/metadata allowlist — see analytics.ts.
+export * from "./analytics.js";
