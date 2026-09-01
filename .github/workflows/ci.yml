@@ -82,6 +82,81 @@ jobs:
           path: playwright-report/
           retention-days: 7
 
+  visual:
+    # M10.1 section 29 (option B) — visual regression as its own required job, isolated from
+    # the functional E2E signal above: a screenshot-baseline diff is far more
+    # environment-sensitive than a functional assertion, and neither should block the other.
+    # Baselines are committed under e2e/tests/visual-smoke.spec.ts-snapshots/ and are never
+    # auto-updated on failure (section 29) — a human must review the diff and re-commit a new
+    # baseline deliberately (`pnpm e2e:visual:update`).
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgis/postgis:16-3.4-alpine
+        env:
+          POSTGRES_USER: cult
+          POSTGRES_PASSWORD: cult
+          POSTGRES_DB: cult
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U cult -d cult"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      DATABASE_URL: postgresql://cult:cult@localhost:5432/cult
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Enable corepack
+        run: corepack enable
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: ".nvmrc"
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Enable required PostgreSQL extensions
+        run: |
+          PGPASSWORD=cult psql -h localhost -U cult -d cult -c "CREATE EXTENSION IF NOT EXISTS postgis;"
+          PGPASSWORD=cult psql -h localhost -U cult -d cult -c "CREATE EXTENSION IF NOT EXISTS pg_trgm;"
+
+      - name: Run database migrations
+        run: pnpm db:migrate
+
+      - name: Build
+        run: pnpm build
+
+      - name: Ingest fixture data
+        run: |
+          pnpm ingest:ticketmaster:fixture
+          pnpm ingest:destino-poa:fixture
+
+      - name: Install Playwright Chromium
+        run: pnpm e2e:install
+
+      - name: Visual regression
+        run: pnpm e2e:visual
+        env:
+          CI: true
+
+      - name: Upload visual report and diffs
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-visual-report
+          path: |
+            playwright-visual-report/
+            e2e/test-results/
+          retention-days: 7
+
   docker-build:
     # M10 section 48/58 — a Dockerfile that has never actually been built is not "done".
     # Builds only (no push, no registry) — verifies each production image still builds on

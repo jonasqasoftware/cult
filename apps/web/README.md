@@ -162,3 +162,68 @@ and navigating back, ticket/source links, the "internal fields never shown" inva
 (clipboard fallback), Lista→Mapa toggle, a geolocated marker's popup link, "Perto de mim" with
 mocked geolocation (both granted and denied), and the not-found page. MapLibre's own tile
 rendering is never asserted on — only product-level behavior (M8 section 66).
+
+### Test pyramid (M10.1 section 32)
+
+```text
+Unit                        — packages/**/*.test.ts, apps/**/*.test.ts (vitest). Pure
+                               functions, normalizers, dedup signals/scoring, formatting.
+                               Fastest, most numerous, run on every save.
+↓
+Database/API integration    — vitest tests that hit a real Postgres (repositories, discovery
+                               queries, the Fastify server itself via `server.test.ts`).
+                               Real DB, real SQL, no mocked persistence layer.
+↓
+UI/E2E functional           — e2e/tests/*.spec.ts except visual-smoke.spec.ts (`pnpm e2e`).
+                               Real stack end to end. discovery/detail/map-nearby/dedup cover
+                               product flows; filter-composition.spec.ts specifically guards
+                               against stale-client-state bugs (query state + visible result +
+                               excluded result, every time — see that file's own header
+                               comment); images.spec.ts proves the three image states (valid/
+                               broken/missing) render correctly through the real stack.
+↓
+Visual regression           — e2e/tests/visual-smoke.spec.ts (`pnpm e2e:visual`, its own CI
+                               job — see .github/workflows/ci.yml's `visual` job). Four
+                               baselines only: home desktop/mobile, one filtered state, one
+                               event-detail-with-image state. Catches CSS/layout regressions
+                               unit and functional tests can't see; never auto-updated on
+                               failure — a diff always needs a human decision
+                               (`pnpm e2e:visual:update` after reviewing it).
+↓
+Manual exploratory          — docs/quality/UI_EXPLORATORY_CHECKLIST.md. A short pre-staging
+                               pass a human runs by hand for the things automation is weakest
+                               at (does this actually feel right, not just "does the assertion
+                               pass").
+```
+
+Each layer catches what the one above it structurally cannot: unit tests can't catch a stale
+React client-state bug (the state itself is correct in isolation; it's *which props reach it,
+when* that's wrong) — that needs a real browser navigation, which is exactly what
+filter-composition.spec.ts's "query state + visible + excluded" pattern is for. Visual
+regression, in turn, catches a card that renders semantically correct DOM but looks visually
+broken (overlapping text, a broken aspect ratio) — something no `getByRole`/`getByText`
+assertion would ever notice.
+
+### Image quality gate (M10.1 sections 7-17)
+
+Three image states are deliberately tested as three separate conditions, not folded into one
+"image works" test — they have different root causes and different correct behavior:
+
+- **valid** — `apps/web/public/test-assets/event-cover.svg` (CULT's own synthetic asset, no
+  third-party image) via a dedicated E2E-seeded event (`e2e/tests/support/valid-image-event.ts`,
+  shared by `images.spec.ts` and `visual-smoke.spec.ts`). Proves the `<img>` is visible, has the
+  expected `src`/`alt`, and actually finished loading (`naturalWidth`/`naturalHeight > 0`) —
+  presence of the element alone is not treated as success.
+- **broken** — reuses the Destino POA golden fixture's `example.invalid` image URL on purpose
+  (a request to that reserved TLD is guaranteed to fail, with no real internet dependency).
+  Proves `EventImage` swaps to the CULT fallback placeholder and never leaves a native
+  broken-image icon in the DOM.
+- **missing** — `image_url: null` (the Ticketmaster golden fixture event with no `images`
+  array). A semantically different condition from "broken" (no request was ever attempted, vs.
+  one that failed) and tested separately for that reason.
+
+`EventImage`'s fallback placeholder carries `data-testid="event-image-placeholder"` purely as a
+stable E2E hook (it stays `aria-hidden` and decorative — the visible event title is always
+adjacent text, so no accessible name is needed on the placeholder itself). A valid image now
+gets a real `alt` (the event title) instead of the previous always-empty `alt=""`, on both the
+card and the detail page.

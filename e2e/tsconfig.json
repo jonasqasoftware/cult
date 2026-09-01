@@ -10,5 +10,5 @@
     "incremental": false,
     "types": ["node", "@playwright/test"]
   },
-  "include": ["tests/**/*.ts", "playwright.config.ts"]
+  "include": ["tests/**/*.ts", "playwright.config.ts", "playwright.visual.config.ts"]
 }

@@ -64,7 +64,7 @@ export default async function EventDetailPage({ params }: EventPageProps) {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       <AnalyticsPageView event="event_view" eventId={event.id} />
 
-      <EventImage src={event.image_url} alt="" />
+      <EventImage src={event.image_url} alt={event.title} />
 
       <div className={styles.body}>
         {statusLabel ? <p className={styles.status}>{statusLabel}</p> : null}

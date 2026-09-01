@@ -62,6 +62,11 @@ test("a custom date range only shows events overlapping it", async ({ page }) =>
   await expect(page.getByText("Rock in Porto Alegre").first()).not.toBeVisible();
 });
 
+// M10.1: the "Fim de semana then Grátis" regression and further filter-composition
+// regressions now live in filter-composition.spec.ts, alongside category/search composition,
+// clear-filter, browser-back, and load-more-then-filter tests covering the same underlying
+// ResultsView bug class.
+
 test("Carregar mais appends a further page of results without navigating away", async ({ page }) => {
   await page.goto("/");
   const eventList = page.getByRole("list", { name: "Lista de eventos" });
@@ -69,6 +74,11 @@ test("Carregar mais appends a further page of results without navigating away", 
   const loadMore = page.getByRole("button", { name: "Carregar mais" });
   await expect(loadMore).toBeVisible();
   await loadMore.click();
-  await expect(eventList.getByRole("listitem")).toHaveCount(initialCount + 1, { timeout: 10_000 });
+  // Not a fixed "+1": the exact remainder depends on how many golden-fixture events exist
+  // (deliberately not hardcoded here — see filter-composition.spec.ts's load-more test for the
+  // one place a fixture-derived exact count is meaningful and justified).
+  await expect
+    .poll(() => eventList.getByRole("listitem").count(), { timeout: 10_000 })
+    .toBeGreaterThan(initialCount);
   await expect(page).toHaveURL("/"); // still the same page — client-side append, not a navigation
 });

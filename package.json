@@ -42,6 +42,8 @@
     "product:summary": "pnpm --filter @cult/worker run product:summary",
     "e2e": "playwright test --config=e2e/playwright.config.ts",
     "e2e:smoke": "playwright test --config=e2e/playwright.smoke.config.ts",
+    "e2e:visual": "playwright test --config=e2e/playwright.visual.config.ts",
+    "e2e:visual:update": "playwright test --config=e2e/playwright.visual.config.ts --update-snapshots",
     "e2e:install": "playwright install --with-deps chromium",
     "clean": "tsc -b --clean tsconfig.json && pnpm -r --if-present run clean"
   },

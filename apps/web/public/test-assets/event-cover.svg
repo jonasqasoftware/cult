@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600" viewBox="0 0 800 600" role="img" aria-label="CULT test asset">
+  <!-- M10.1 section 8 — CULT's own synthetic, test-only asset (no third-party image, no
+       download from the internet). Used exclusively by E2E's "valid image" fixture so the
+       image-rendering path (database -> API -> Web -> browser) can be proven end-to-end
+       without depending on Ticketmaster/Destino POA's `example.invalid` fixture URLs, which
+       stay reserved for the broken-image path on purpose (M10.1 section 7). -->
+  <rect width="800" height="600" fill="#2b2440"/>
+  <text x="400" y="320" font-family="sans-serif" font-size="120" font-weight="700" fill="#f4f1fb" text-anchor="middle">CULT</text>
+  <text x="400" y="400" font-family="sans-serif" font-size="28" fill="#b9aee0" text-anchor="middle">test asset — event-cover.svg</text>
+</svg>

@@ -14,8 +14,11 @@ export default defineConfig({
   testDir: "./tests",
   // smoke.spec.ts targets a configurable, already-running environment (M10 section 46) via
   // playwright.smoke.config.ts / `pnpm e2e:smoke` — kept out of this suite so it isn't run
-  // twice against two different configs by a plain `pnpm e2e`.
-  testIgnore: "smoke.spec.ts",
+  // twice against two different configs by a plain `pnpm e2e`. visual-smoke.spec.ts is its
+  // own separate, obligatory-but-isolated job (M10.1 section 29 option B) via
+  // playwright.visual.config.ts / `pnpm e2e:visual` — kept separate so a screenshot-baseline
+  // diff never blocks the functional E2E signal, and vice versa.
+  testIgnore: ["smoke.spec.ts", "visual-smoke.spec.ts"],
   fullyParallel: true,
   forbidOnly: !!process.env["CI"],
   retries: process.env["CI"] ? 1 : 0,
@@ -25,6 +28,9 @@ export default defineConfig({
   use: {
     baseURL: WEB_BASE_URL,
     trace: "retain-on-failure",
+    // M10.1 section 30 — a screenshot alongside the trace on any functional-test failure too,
+    // not just visual-smoke's own baselines.
+    screenshot: "only-on-failure",
   },
   projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
   webServer: [
