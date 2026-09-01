@@ -29,6 +29,35 @@ export const TICKETMASTER_SOURCE_DEFINITION = createSourceDefinition({
     "commercialUse=restricted per docs/sources/ticketmaster.md — do not change to 'allowed' without legal/commercial review.",
 });
 
+// authorityScore hypothesis: Destino POA is Porto Alegre's own official tourism/agenda
+// portal — arguably BROADER local coverage than Ticketmaster (it lists free/informal events
+// Ticketmaster never would), which argues for a score at least as high. But it's HTML-
+// scraped rather than API-validated, and reuse/commercial rights are unconfirmed (see
+// docs/sources/destino-poa.md), which argues for caution. 0.75 balances these — slightly
+// above Ticketmaster's 0.7 for coverage breadth, not because it's "more official."
+const DESTINO_POA_AUTHORITY_SCORE = 0.75;
+
+// pollingIntervalMinutes hypothesis: no rate limit is documented (no public API exists to
+// document one), so this is chosen conservatively to avoid being a bad citizen against a
+// site with no API contract — checked far less often than Ticketmaster's API.
+const DESTINO_POA_POLLING_INTERVAL_MINUTES = 240;
+
+// commercialUse is deliberately "unknown", never "allowed" — see the Source Legal Gate in
+// docs/sources/destino-poa.md and ADR-0013. type is "crawler", reflecting the actual method
+// found (HTML scraping) — there is no public API to set type: "api" against.
+export const DESTINO_POA_SOURCE_DEFINITION = createSourceDefinition({
+  id: "destino-poa",
+  name: "Destino POA — Agenda Cultural",
+  type: "crawler",
+  enabled: true,
+  pollingIntervalMinutes: DESTINO_POA_POLLING_INTERVAL_MINUTES,
+  authorityScore: DESTINO_POA_AUTHORITY_SCORE,
+  commercialUse: "unknown",
+  connector: "destino-poa",
+  notes:
+    "commercialUse=unknown per docs/sources/destino-poa.md — no reuse/licensing terms found yet; do not change to 'allowed' without a documented rights review. Live persistence is not implemented in M3 (fixture-only) — see docs/sources/destino-poa.md.",
+});
+
 export function createDevelopmentSourceRegistry(): SourceRegistryPort {
-  return createInMemorySourceRegistry([TICKETMASTER_SOURCE_DEFINITION]);
+  return createInMemorySourceRegistry([TICKETMASTER_SOURCE_DEFINITION, DESTINO_POA_SOURCE_DEFINITION]);
 }

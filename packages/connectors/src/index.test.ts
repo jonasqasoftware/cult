@@ -9,4 +9,11 @@ describe("@cult/connectors public exports", () => {
     expect(typeof connectors.normalizeTicketmasterEvent).toBe("function");
     expect(connectors.TICKETMASTER_SOURCE_ID).toBe("ticketmaster");
   });
+
+  it("exposes the Destino POA fixture adapter, normalizer and inspector through the package barrel", () => {
+    expect(typeof connectors.createDestinoPOAFixtureAdapter).toBe("function");
+    expect(typeof connectors.normalizeDestinoPOAEvent).toBe("function");
+    expect(typeof connectors.inspectDestinoPOA).toBe("function");
+    expect(connectors.DESTINO_POA_SOURCE_ID).toBe("destino-poa");
+  });
 });

@@ -42,15 +42,15 @@ See:
 apps/
   api/      Fastify REST API — /health, /ready, GET /v1/events, GET /v1/events/{slug}
   web/      Next.js Web/PWA (placeholder page only — no product UI yet)
-  worker/   Ingestion worker — Ticketmaster fixture/live ingestion commands (M2)
+  worker/   Ingestion worker — Ticketmaster + Destino POA fixture ingestion commands
 
 packages/
   domain/             M1 — entities, ports, source registry (provider-independent)
-  database/           M2 — Drizzle schema, migrations, repositories (Ticketmaster slice)
-  connectors/         M2 — Ticketmaster client/adapter/normalizer (see docs/sources/)
-  canonical-events/   M2 — slug generation, provisional quality/ranking score policy
-  config/             M2 — env loading, Source Registry (Ticketmaster: commercialUse=restricted)
-  deduplication/      M5 — dedup logic (not started)
+  database/           M2 — Drizzle schema, migrations, repositories (multi-source, no dedup)
+  connectors/         M2/M3 — Ticketmaster + Destino POA client/adapter/normalizer
+  canonical-events/   M2/M3 — slug gen, content hash, provisional score policy (shared)
+  config/             M2/M3 — env loading, Source Registry (see docs/sources/*.md for legal status)
+  deduplication/      M5 — dedup logic (not started — see test-data/golden-events/cross-source-candidates.md)
   ranking/            future — real quality score / ranking logic (not started)
   observability/      future — structured logging, ingestion metrics (not started)
 ```
@@ -88,7 +88,13 @@ pnpm dev:worker   # worker foundation entrypoint
 
 # Ticketmaster ingestion (see docs/sources/ticketmaster.md)
 pnpm ingest:ticketmaster:fixture   # no API key / no network — reads the synthetic fixture
-pnpm ingest:ticketmaster           # requires TICKETMASTER_API_KEY in .env; never used in CI
+pnpm ingest:ticketmaster           # requires TICKETMASTER_API_KEY + TICKETMASTER_LIVE_PERSIST_ACK=true
+pnpm ingest:ticketmaster:live-smoke  # bounded, read-only, never persists
+
+# Destino POA ingestion (see docs/sources/destino-poa.md) — fixture-only, no live-persisting
+# command exists yet (commercialUse: unknown, HTML-scraped — see ADR-0013)
+pnpm ingest:destino-poa:fixture    # no network — reads the synthetic fixture
+pnpm inspect:destino-poa           # bounded, read-only live discovery spike, never persists
 ```
 
 ## Quality checks
@@ -112,7 +118,8 @@ pnpm db:migrate   # apply pending migrations (requires DATABASE_URL)
 ```
 
 `docker-compose.yml` provisions PostgreSQL with the `postgis` and `pg_trgm` extensions enabled
-via `docker/postgres/initdb/001-extensions.sql` (see ADR-0005). Schema/migrations for the
-Ticketmaster vertical slice (`sources`, `raw_events`, `events`, `event_occurrences`,
-`event_sources`, `venues`) live in `packages/database/drizzle/` — no domain tables beyond
-what M2 needs (see ADR-0013 for `raw_events.retention_until`).
+via `docker/postgres/initdb/001-extensions.sql` (see ADR-0005). Schema/migrations
+(`sources`, `raw_events`, `events`, `event_occurrences`, `event_sources`, `venues`) live in
+`packages/database/drizzle/` and are already multi-source (proven by Ticketmaster + Destino
+POA coexisting) — no schema change was needed to add the second provider, and no dedup table
+exists yet (see ADR-0013 for `raw_events.retention_until`).

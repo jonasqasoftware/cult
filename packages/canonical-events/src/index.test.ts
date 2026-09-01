@@ -8,4 +8,8 @@ describe("@cult/canonical-events public exports", () => {
     expect(canonicalEvents.PROVISIONAL_QUALITY_SCORE).toBeLessThanOrEqual(1);
     expect(canonicalEvents.PROVISIONAL_RANKING_SCORE).toBeGreaterThanOrEqual(0);
   });
+
+  it("exposes the provider-independent content hash utility", () => {
+    expect(typeof canonicalEvents.hashPayload).toBe("function");
+  });
 });

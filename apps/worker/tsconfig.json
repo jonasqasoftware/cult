@@ -7,6 +7,7 @@
   "include": ["src"],
   "references": [
     { "path": "../../packages/domain" },
+    { "path": "../../packages/canonical-events" },
     { "path": "../../packages/config" },
     { "path": "../../packages/connectors" },
     { "path": "../../packages/database" }

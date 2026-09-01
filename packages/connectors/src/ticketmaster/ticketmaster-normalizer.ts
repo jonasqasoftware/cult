@@ -3,7 +3,6 @@ import {
   createEventOccurrence,
   createEventSourceReference,
   createVenue,
-  type CanonicalEvent,
   type EventPrice,
   type EventStatus,
   type Performer,
@@ -14,6 +13,7 @@ import {
   PROVISIONAL_QUALITY_SCORE,
   PROVISIONAL_RANKING_SCORE,
   generateSlug,
+  type NormalizationResult,
 } from "@cult/canonical-events";
 import type {
   TicketmasterAttraction,
@@ -32,9 +32,7 @@ export interface NormalizeTicketmasterEventContext {
   readonly now: Date;
 }
 
-export type NormalizationResult =
-  | { readonly ok: true; readonly event: CanonicalEvent }
-  | { readonly ok: false; readonly reason: string };
+export type { NormalizationResult };
 
 // Pure: no HTTP, no I/O, no system clock reads (context.now is injected by the caller).
 export function normalizeTicketmasterEvent(

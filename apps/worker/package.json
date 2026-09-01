@@ -10,9 +10,12 @@
     "clean": "rm -rf dist *.tsbuildinfo",
     "ingest:ticketmaster:fixture": "tsx src/commands/ingest-ticketmaster-fixture.ts",
     "ingest:ticketmaster": "tsx src/commands/ingest-ticketmaster-live.ts",
-    "ingest:ticketmaster:live-smoke": "tsx src/commands/ingest-ticketmaster-live-smoke.ts"
+    "ingest:ticketmaster:live-smoke": "tsx src/commands/ingest-ticketmaster-live-smoke.ts",
+    "ingest:destino-poa:fixture": "tsx src/commands/ingest-destino-poa-fixture.ts",
+    "inspect:destino-poa": "tsx src/commands/inspect-destino-poa.ts"
   },
   "dependencies": {
+    "@cult/canonical-events": "workspace:*",
     "@cult/config": "workspace:*",
     "@cult/connectors": "workspace:*",
     "@cult/database": "workspace:*",

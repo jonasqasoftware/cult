@@ -1,0 +1,122 @@
+{
+  "events": [
+    {
+      "id": "virada-cultural-porto-alegre-2026",
+      "title": "Virada Cultural Porto Alegre",
+      "url": "https://destinopoa.com.br/evento/virada-cultural-porto-alegre-2026/",
+      "description": "Programação cultural com música ao vivo no centro histórico.",
+      "startDate": "2026-09-12",
+      "startTime": "20:00",
+      "endTime": "23:00",
+      "venueName": "Auditório Araújo Vianna",
+      "address": "Av. Osvaldo Aranha, 685 - Bom Fim",
+      "neighborhood": "Bom Fim",
+      "categories": ["Cultural", "Show de música"],
+      "free": false,
+      "priceValue": 40,
+      "imageUrl": "https://example.invalid/dpoa/virada-cultural.webp",
+      "externalUrl": "https://example.invalid/virada-cultural-oficial"
+    },
+    {
+      "id": "feira-do-livro-de-porto-alegre-2026",
+      "title": "Feira do Livro de Porto Alegre",
+      "url": "https://destinopoa.com.br/evento/feira-do-livro-de-porto-alegre-2026/",
+      "description": "Feira literária ao ar livre com editoras locais.",
+      "startDate": "2026-10-05",
+      "startTime": "10:00",
+      "venueName": "Praça da Alfândega",
+      "neighborhood": "Centro Histórico",
+      "categories": ["Literatura", "Gratuito"],
+      "free": true,
+      "imageUrl": "https://example.invalid/dpoa/feira-do-livro.webp"
+    },
+    {
+      "id": "roda-de-conversa-cultura-popular-2026",
+      "title": "Roda de Conversa sobre Cultura Popular",
+      "url": "https://destinopoa.com.br/evento/roda-de-conversa-cultura-popular-2026/",
+      "startDate": "2026-09-20",
+      "startTime": "18:30",
+      "venueName": "Casa de Cultura Mario Quintana",
+      "categories": ["Cultural"],
+      "imageUrl": "https://example.invalid/dpoa/roda-conversa.webp"
+    },
+    {
+      "id": "exposicao-arte-gaucha-contemporanea-2026",
+      "title": "Exposição Arte Gaúcha Contemporânea",
+      "url": "https://destinopoa.com.br/evento/exposicao-arte-gaucha-contemporanea-2026/",
+      "description": "Mostra coletiva de artistas visuais gaúchos.",
+      "startDate": "2026-09-01",
+      "endDate": "2026-09-30",
+      "venueName": "Santander Cultural",
+      "categories": ["Cultural", "Exposição"],
+      "free": true,
+      "imageUrl": "https://example.invalid/dpoa/expo-arte-gaucha.webp"
+    },
+    {
+      "id": "festival-cinema-independente-poa-2026",
+      "title": "Festival de Cinema Independente de Porto Alegre",
+      "url": "https://destinopoa.com.br/evento/festival-cinema-independente-poa-2026/",
+      "startDate": "2026-10-15",
+      "startTime": "19:00",
+      "venueName": "Cinemateca Capitólio",
+      "categories": ["Cinema", "Cultural", "Gratuito"],
+      "free": true,
+      "imageUrl": "https://example.invalid/dpoa/festival-cinema.webp"
+    },
+    {
+      "id": "sarau-de-poesia-na-redencao-2026",
+      "title": "Sarau de Poesia na Redenção",
+      "url": "https://destinopoa.com.br/evento/sarau-de-poesia-na-redencao-2026/",
+      "startDate": "2026-09-27",
+      "startTime": "17:00",
+      "venueName": "Parque Farroupilha",
+      "neighborhood": "Independência",
+      "categories": ["Literatura", "Cultural"]
+    },
+    {
+      "id": "encontro-de-food-trucks-2026",
+      "title": "Encontro de Food Trucks",
+      "url": "https://destinopoa.com.br/evento/encontro-de-food-trucks-2026/",
+      "startDate": "2026-10-10",
+      "venueName": "Usina do Gasômetro",
+      "categories": ["Gastronomia"],
+      "imageUrl": "https://example.invalid/dpoa/food-trucks.webp"
+    },
+    {
+      "id": "rock-in-porto-alegre-dpoa-2026",
+      "title": "Rock in Porto Alegre",
+      "url": "https://destinopoa.com.br/evento/rock-in-porto-alegre-dpoa-2026/",
+      "description": "Show de rock em espaço aberto na orla do Guaíba.",
+      "startDate": "2026-11-20",
+      "startTime": "20:00",
+      "venueName": "Parque Maurício Sirotsky Sobrinho",
+      "address": "Av. Edvaldo Pereira Paiva, 63 - Praia de Belas",
+      "neighborhood": "Praia de Belas",
+      "categories": ["Show de música"],
+      "free": false,
+      "priceValue": 80,
+      "imageUrl": "https://example.invalid/dpoa/rock-in-poa.webp"
+    },
+    {
+      "id": "visita-guiada-usina-do-gasometro-2026",
+      "title": "Visita Guiada Usina do Gasômetro",
+      "url": "https://destinopoa.com.br/evento/visita-guiada-usina-do-gasometro-2026/",
+      "description": "Passeio guiado pela antiga usina, hoje centro cultural.",
+      "startDate": "2026-09-19",
+      "startTime": "14:00",
+      "endTime": "15:30",
+      "venueName": "Usina do Gasômetro",
+      "address": "Av. Presidente João Goulart, 551 - Farroupilha",
+      "neighborhood": "Farroupilha",
+      "categories": ["Cultural", "Turismo"],
+      "free": true,
+      "imageUrl": "https://example.invalid/dpoa/usina-gasometro.webp"
+    },
+    {
+      "id": "",
+      "title": "",
+      "startDate": "2026-09-05",
+      "startTime": "19:00"
+    }
+  ]
+}

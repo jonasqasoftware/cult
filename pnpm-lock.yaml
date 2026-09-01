@@ -72,6 +72,9 @@ importers:
 
   apps/worker:
     dependencies:
+      '@cult/canonical-events':
+        specifier: workspace:*
+        version: link:../../packages/canonical-events
       '@cult/config':
         specifier: workspace:*
         version: link:../../packages/config
@@ -85,7 +88,11 @@ importers:
         specifier: workspace:*
         version: link:../../packages/domain
 
-  packages/canonical-events: {}
+  packages/canonical-events:
+    dependencies:
+      '@cult/domain':
+        specifier: workspace:*
+        version: link:../domain
 
   packages/config:
     dependencies:

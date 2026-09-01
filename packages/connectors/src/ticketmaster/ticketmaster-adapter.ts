@@ -1,5 +1,6 @@
-import { createHash, randomUUID } from "node:crypto";
+import { randomUUID } from "node:crypto";
 import type { CollectionContext, EventSourcePort, RawSourceEvent, SourceHealth } from "@cult/domain";
+import { hashPayload } from "@cult/canonical-events";
 import {
   createTicketmasterClient,
   type TicketmasterClientConfig,
@@ -107,24 +108,4 @@ export function ticketmasterEventToRawSourceEvent(tmEvent: TicketmasterEvent): R
     fetchedAt: new Date(),
     schemaVersion: RAW_EVENT_SCHEMA_VERSION,
   };
-}
-
-// Sorts object keys recursively before stringifying, so contentHash depends only on the
-// payload's actual content — never on incidental JSON key order — while still needing no
-// canonical-JSON dependency.
-function stableStringify(value: unknown): string {
-  if (Array.isArray(value)) {
-    return `[${value.map(stableStringify).join(",")}]`;
-  }
-  if (value !== null && typeof value === "object") {
-    const entries = Object.keys(value as Record<string, unknown>)
-      .sort()
-      .map((key) => `${JSON.stringify(key)}:${stableStringify((value as Record<string, unknown>)[key])}`);
-    return `{${entries.join(",")}}`;
-  }
-  return JSON.stringify(value);
-}
-
-function hashPayload(payload: unknown): string {
-  return createHash("sha256").update(stableStringify(payload)).digest("hex");
 }
