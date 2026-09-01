@@ -1,5 +1,6 @@
 import Fastify, { type FastifyInstance } from "fastify";
 import {
+  computeSuppressedEventIds,
   createCanonicalEventRepository,
   discoverEvents,
   InvalidDiscoveryCursorError,
@@ -72,7 +73,15 @@ export function buildServer(options: BuildServerOptions): FastifyInstance {
     }
 
     try {
-      const result = await discoverEvents(db, parsed.value);
+      // M9 section 22/38: presentation suppression is entirely a discovery-layer concern —
+      // computed here, before pagination, so a suppressed event never even reaches the
+      // client. The web app has no dedup rule of its own; it only ever sees already-
+      // deduplicated results.
+      const suppressedEventIds = await computeSuppressedEventIds(db);
+      const result = await discoverEvents(db, {
+        ...parsed.value,
+        ...(suppressedEventIds.size > 0 ? { excludeEventIds: [...suppressedEventIds] } : {}),
+      });
       return {
         data: result.items.map((item) => toEventResponse(item.event, item.distanceMeters)),
         pagination: { next_cursor: result.nextCursor },

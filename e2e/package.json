@@ -1,0 +1,14 @@
+{
+  "name": "@cult/e2e",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@cult/database": "workspace:*",
+    "@cult/domain": "workspace:*",
+    "drizzle-orm": "^0.45.2"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.62.1"
+  }
+}

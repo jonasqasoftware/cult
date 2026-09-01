@@ -395,3 +395,29 @@ describe("discoverEvents — pagination", () => {
     );
   });
 });
+
+// M9 section 22/24: dedup suppression must exclude events BEFORE the LIMIT is applied, or a
+// page can come back short/inconsistent (rather than the caller excluding rows from an
+// already-paginated result).
+describe("discoverEvents — excludeEventIds (dedup suppression)", () => {
+  it("excludes the given event ids from the result entirely", async () => {
+    await repository.save(makeEvent("evt-a", { occurrences: [timed("evt-a", "2026-09-10T10:00:00-03:00")] }));
+    await repository.save(makeEvent("evt-b", { occurrences: [timed("evt-b", "2026-09-11T10:00:00-03:00")] }));
+    await repository.save(makeEvent("evt-c", { occurrences: [timed("evt-c", "2026-09-12T10:00:00-03:00")] }));
+
+    const result = await discoverEvents(connection.db, { limit: 20, excludeEventIds: ["evt-b"] });
+    expect(result.items.map((i) => i.event.id)).toEqual(["evt-a", "evt-c"]);
+  });
+
+  it("applies exclusion before the page LIMIT, never shrinking a page inconsistently", async () => {
+    await repository.save(makeEvent("evt-a", { occurrences: [timed("evt-a", "2026-09-10T10:00:00-03:00")] }));
+    await repository.save(makeEvent("evt-b", { occurrences: [timed("evt-b", "2026-09-11T10:00:00-03:00")] }));
+    await repository.save(makeEvent("evt-c", { occurrences: [timed("evt-c", "2026-09-12T10:00:00-03:00")] }));
+
+    // Excluding "evt-a" (the soonest) means a limit=2 page should still return TWO full
+    // results (b, c) — not one short page as if exclusion were applied after slicing.
+    const result = await discoverEvents(connection.db, { limit: 2, excludeEventIds: ["evt-a"] });
+    expect(result.items.map((i) => i.event.id)).toEqual(["evt-b", "evt-c"]);
+    expect(result.nextCursor).toBeNull();
+  });
+});

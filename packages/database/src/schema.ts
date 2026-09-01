@@ -3,6 +3,7 @@ import {
   boolean,
   check,
   date,
+  index,
   integer,
   jsonb,
   pgTable,
@@ -176,4 +177,45 @@ export const eventSources = pgTable(
     confidence: real("confidence").notNull(),
   },
   (table) => [primaryKey({ columns: [table.eventId, table.sourceId] })],
+);
+
+// M9: reversible dedup persistence — never a physical merge (CLAUDE.md rule 11: dedup
+// thresholds/decisions are product logic and must be tested; this table is the audit trail).
+// The (left_event_id, right_event_id) pair is always stored in normalized order
+// (left < right, enforced by the CHECK below) so A+B and B+A can never both exist — see
+// packages/database/src/dedup/pair.ts. `status` starts as the M6/M6.1 engine's own routing
+// (auto_approved/pending_review, decision_source='engine') and — once a human calls
+// dedup:review:same/different — becomes confirmed_same/confirmed_different with
+// decision_source='human'; a later dedup:scan re-evaluates score/signals but must never
+// downgrade a human decision back to an engine one (see candidate-repository.ts upsert logic).
+export const dedupCandidates = pgTable(
+  "dedup_candidates",
+  {
+    id: text("id").primaryKey(),
+    leftEventId: text("left_event_id")
+      .notNull()
+      .references(() => events.id, { onDelete: "cascade" }),
+    rightEventId: text("right_event_id")
+      .notNull()
+      .references(() => events.id, { onDelete: "cascade" }),
+    score: real("score").notNull(),
+    routing: text("routing").notNull(), // "auto_merge" | "review" | "separate" — the engine's own output
+    signalsJson: jsonb("signals_json").notNull().$type<Record<string, number>>(),
+    conflictsJson: jsonb("conflicts_json").notNull().$type<string[]>(),
+    autoMergeEligible: boolean("auto_merge_eligible").notNull(),
+    blockersJson: jsonb("blockers_json").notNull().$type<string[]>(),
+    // "pending_review" | "auto_approved" | "confirmed_same" | "confirmed_different"
+    status: text("status").notNull(),
+    // "engine" | "human" — who set the CURRENT status, not who ran the most recent scan.
+    decisionSource: text("decision_source").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+    evaluatedAt: timestamp("evaluated_at", { withTimezone: true }).notNull(),
+    decidedAt: timestamp("decided_at", { withTimezone: true }),
+  },
+  (table) => [
+    uniqueIndex("dedup_candidates_pair_unique").on(table.leftEventId, table.rightEventId),
+    check("dedup_candidates_normalized_pair", sql`${table.leftEventId} < ${table.rightEventId}`),
+    index("dedup_candidates_status_idx").on(table.status),
+  ],
 );

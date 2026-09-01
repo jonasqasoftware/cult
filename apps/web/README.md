@@ -118,13 +118,17 @@ installability at this stage.
   integration gap, not something the frontend should silently fix.
 - **Performers are not shown on the event detail page.** The public `Event` schema doesn't
   include a `performers` field — nothing was invented client-side to fill that gap.
-- A `notFound()`-triggered page (e.g. `/eventos/<unknown-slug>`) renders the correct
-  "not found" UI, but this Next.js 16.3.4 build was observed returning HTTP 200 instead of
-  404 for that response (verified with a minimal, otherwise-correct repro — a bare
-  `notFound()` call with no data fetching at all still returns 200). The implementation
-  follows the documented, idiomatic App Router pattern; this looks like a framework-level
-  issue in this specific Next.js version rather than something fixable in application code.
-  Flagged here rather than worked around with a non-idiomatic status-code hack.
+- **`notFound()` returns HTTP 200, not 404 (M9 correction).** A `notFound()`-triggered page
+  (e.g. `/eventos/<unknown-slug>`) renders the correct "not found" UI, but this build was
+  observed returning HTTP 200 for that response. This is Next.js's documented **streamed
+  `notFound()` behavior**, not a framework bug: the route segment has a `loading.tsx`
+  sibling, so the response starts streaming (and its 200 status line is already sent) before
+  the Server Component's `notFound()` call is reached — a status code can't be changed
+  retroactively once streaming has begun. A non-streamed route (no `loading.tsx` in the
+  chain) sets 404 correctly. M9 deliberately does not change `loading.tsx`/the streaming UX
+  just to correct this status code — that trade-off (perceived-load-speed via streaming vs.
+  a technically-correct 404 status on a rare not-found path) is a product decision for a
+  future milestone, not something to flip silently here.
 
 ## E2E
 

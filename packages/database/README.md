@@ -96,10 +96,74 @@ version has no first-class way to express a PostGIS-generated column or a trigra
 opclass index. This means a future `pnpm db:generate` diffing against `schema.ts` won't
 know these exist — that drift is intentional and documented here, not accidental.
 
+## Dedup persistence + presentation suppression (M9)
+
+`src/dedup/` connects the M6/M6.1 deduplication engine to the product — reversibly. It
+never physically merges two `CanonicalEvent`s: no field reconciliation, no deletion, no
+destructive provenance move. It only decides which of a same-event pair to *show*.
+
+- **`find-candidate-pairs.ts`** — SQL blocking, recall-oriented (section 8: more
+  permissive than any final-matching threshold, since missing a real duplicate here means
+  the engine never even sees it). Cross-source only (`NOT EXISTS` a shared `source_id`
+  between the two events), a permissive `pg_trgm` title check
+  (`GREATEST(similarity, word_similarity) > 0.15`), and any-occurrence temporal overlap
+  using the same local-date-range technique as Discovery. It never decides identity —
+  that's the engine's job, reused exactly as-is from `@cult/deduplication`, never
+  reimplemented in SQL (section 9).
+- **`pair.ts`** — `normalizePair(a, b)`: A+B and B+A always normalize to the same
+  `{leftEventId, rightEventId}` (the smaller id first), enforced additionally by a DB
+  CHECK constraint (`left_event_id < right_event_id`) so the unique index on the pair can
+  never be bypassed by storing both orderings.
+- **`candidate-repository.ts`** — `upsertEngineEvaluation` is the engine's only write
+  path into `dedup_candidates` (migration `0003_dedup_candidates.sql`). Routing maps
+  directly to status: `auto_merge` → `auto_approved` ("safe to suppress duplicate
+  presentation," never "merged"), `review` → `pending_review`, `separate` → `separate`
+  (persisted too, so an unchanged pair isn't re-evaluated for nothing on the next scan).
+  Idempotent: re-running an unchanged evaluation updates the existing row, never inserts
+  a duplicate. Critically, it **never downgrades a human decision**
+  (`confirmed_same`/`confirmed_different`, set only by `decideCandidate`, the CLI review
+  commands' only write path) back to an engine-derived status — a later scan still
+  refreshes the observed score/signals/evaluatedAt for the audit trail, but leaves
+  `status`/`decision_source` untouched once a human has decided.
+- **`representative.ts`** — `selectRepresentative(a, b)`, a small, explainable, pure
+  policy (never trusting `qualityScore`/`rankingScore`, still M2 provisional
+  placeholders): (1) more useful public fields filled in — completeness, weighted so a
+  venue *with coordinates* reliably beats one without (protects "nearby" for the pair,
+  never silently drops geo); (2) higher max source confidence; (3) event id as a
+  deterministic tie-breaker. This only decides which event to *show*; it never copies a
+  field from one into the other.
+- **`suppression.ts`** — `computeSuppressedEventIds(db)` reads every `auto_approved`/
+  `confirmed_same` candidate, resolves the representative for each pair, and returns the
+  set of *non*-representative event ids. `apps/api/src/server.ts` computes this before
+  calling `discoverEvents`, passing it as `excludeEventIds` — applied inside the same SQL
+  `WHERE` clause as every other discovery filter, so suppression always happens before
+  `ORDER BY`/`LIMIT`/cursor pagination, never as an after-the-fact filter on an
+  already-paginated page. `pending_review` and `confirmed_different`/`separate` pairs are
+  never suppressed — both events stay independently visible until a human (or the engine,
+  for `separate`) has ruled it out.
+
+  Per-pair only: this does not chase transitive duplicate clusters (A~B and B~C doesn't
+  imply A~C is resolved together) — real clustering is exactly the "field reconciliation"
+  scope M9 deliberately excludes.
+
+  A suppressed event's own `/v1/events/{slug}` and `/eventos/{slug}` stay fully
+  reachable — only `GET /v1/events` (discovery/listing) is affected. No redirect was
+  added without an explicit architectural decision to do so (M9 section 23).
+
+### Ops summary (`src/ops/summary.ts`)
+
+`computeOpsSummary(db)` — honestly-available metrics only, no invented uptime or health
+score: canonical event count, raw pending/failed counts, dedup status counts, and
+per-source health (enabled, last raw `fetched_at`, raw success/failed counts, canonical
+reference count). This is the foundation for a future operational UI — no such UI exists
+yet, and none was built in M9 (CLI only; see `apps/worker`'s README/`pnpm ops:summary`).
+
 ## Limitations
 
 - No dedicated categories/performers/organizers tables — categories are a free-text
   `category_id`, performers/organizer are inline JSON on `events`.
-- Cross-source duplicates are not merged (the M6/M6.1 deduplication engine exists but is
-  not wired into ingestion or discovery yet) — a search or listing can show two distinct
-  `CanonicalEvent`s that a human would recognize as the same real-world event.
+- Dedup suppression is per-pair, not transitive-cluster-aware (see "Dedup" above).
+- No physical merge: a suppressed event's data is never reconciled into its
+  representative — if the representative is missing a field the suppressed sibling had
+  (other than the geo-completeness case the representative policy already accounts for),
+  that field is simply not shown, by design (M9 section 21).

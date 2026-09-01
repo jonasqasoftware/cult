@@ -28,6 +28,11 @@ export interface DiscoveryQuery {
   readonly geo?: DiscoveryGeoFilter;
   readonly cursor?: string;
   readonly limit: number;
+  // M9: ids to exclude entirely (dedup presentation suppression, section 22) — applied inside
+  // the same WHERE clause as every other filter, so it always takes effect before ORDER
+  // BY/LIMIT/cursor pagination, never as an after-the-fact filter on an already-paginated page
+  // (section 24).
+  readonly excludeEventIds?: readonly string[];
 }
 
 export interface DiscoveryResultItem {
@@ -74,6 +79,9 @@ export async function discoverEvents(db: Database, query: DiscoveryQuery): Promi
   }
   if (query.q !== undefined) {
     conditions.push(buildSearchCondition(query.q));
+  }
+  if (query.excludeEventIds && query.excludeEventIds.length > 0) {
+    conditions.push(sql`e.id NOT IN (${sql.join(query.excludeEventIds.map((id) => sql`${id}`), sql`, `)})`);
   }
 
   let distanceExpr: SQL = sql`NULL::double precision`;

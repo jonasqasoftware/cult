@@ -32,6 +32,11 @@
     "dedup:evaluate:calibration": "pnpm --filter @cult/deduplication run dedup:evaluate:calibration",
     "dedup:evaluate:holdout": "pnpm --filter @cult/deduplication run dedup:evaluate:holdout",
     "dedup:evaluate:all": "pnpm --filter @cult/deduplication run dedup:evaluate:all",
+    "dedup:scan": "pnpm --filter @cult/worker run dedup:scan",
+    "dedup:review:list": "pnpm --filter @cult/worker run dedup:review:list",
+    "dedup:review:same": "pnpm --filter @cult/worker run dedup:review:same --",
+    "dedup:review:different": "pnpm --filter @cult/worker run dedup:review:different --",
+    "ops:summary": "pnpm --filter @cult/worker run ops:summary",
     "e2e": "playwright test --config=e2e/playwright.config.ts",
     "e2e:install": "playwright install --with-deps chromium",
     "clean": "tsc -b --clean tsconfig.json && pnpm -r --if-present run clean"

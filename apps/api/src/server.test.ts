@@ -10,7 +10,13 @@ import {
   type EventOccurrence,
   type EventPrice,
 } from "@cult/domain";
-import { createCanonicalEventRepository, createDatabaseConnection, upsertSource } from "@cult/database";
+import {
+  createCanonicalEventRepository,
+  createDatabaseConnection,
+  normalizePair,
+  upsertEngineEvaluation,
+  upsertSource,
+} from "@cult/database";
 import { connectTestDatabase, truncateAllTables } from "@cult/database/test-support";
 import { buildServer } from "./server.js";
 
@@ -313,6 +319,60 @@ describe("GET /v1/events — discovery filters (contract tests)", () => {
 
     const explicitResponse = await app.inject({ method: "GET", url: "/v1/events?status=cancelled" });
     expect(explicitResponse.json().data.map((e: { slug: string }) => e.slug)).toEqual(["cancelled-evt"]);
+  });
+});
+
+// M9 section 22/38: suppression happens entirely server-side — the API returns already-
+// deduplicated results, and the web app never implements any dedup rule of its own.
+describe("GET /v1/events — dedup presentation suppression", () => {
+  it("returns only the representative of an auto_approved pair", async () => {
+    const repository = createCanonicalEventRepository(connection.db);
+    await repository.save(makeEvent("evt-plain"));
+    await repository.save(makeEvent("evt-rich", undefined, { venue: createVenue({ id: "v-rich", name: "Venue", city: "Porto Alegre", state: "RS" }) }));
+    const pair = normalizePair("evt-plain", "evt-rich");
+    await upsertEngineEvaluation(
+      connection.db,
+      {
+        leftEventId: pair.leftEventId,
+        rightEventId: pair.rightEventId,
+        score: 0.99,
+        routing: "auto_merge",
+        signals: { title: 1 },
+        conflicts: [],
+        autoMergeEligible: true,
+        blockers: [],
+      },
+      NOW,
+    );
+
+    const response = await app.inject({ method: "GET", url: "/v1/events" });
+    const slugs = response.json().data.map((e: { slug: string }) => e.slug);
+    expect(slugs).toEqual(["evt-rich"]);
+  });
+
+  it("still returns both events of a pending_review pair", async () => {
+    const repository = createCanonicalEventRepository(connection.db);
+    await repository.save(makeEvent("evt-x"));
+    await repository.save(makeEvent("evt-y"));
+    const pair = normalizePair("evt-x", "evt-y");
+    await upsertEngineEvaluation(
+      connection.db,
+      {
+        leftEventId: pair.leftEventId,
+        rightEventId: pair.rightEventId,
+        score: 0.85,
+        routing: "review",
+        signals: { title: 1 },
+        conflicts: [],
+        autoMergeEligible: false,
+        blockers: [],
+      },
+      NOW,
+    );
+
+    const response = await app.inject({ method: "GET", url: "/v1/events" });
+    const slugs = response.json().data.map((e: { slug: string }) => e.slug);
+    expect(slugs).toEqual(expect.arrayContaining(["evt-x", "evt-y"]));
   });
 });
 

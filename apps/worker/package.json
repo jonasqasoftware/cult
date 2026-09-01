@@ -12,13 +12,19 @@
     "ingest:ticketmaster": "tsx src/commands/ingest-ticketmaster-live.ts",
     "ingest:ticketmaster:live-smoke": "tsx src/commands/ingest-ticketmaster-live-smoke.ts",
     "ingest:destino-poa:fixture": "tsx src/commands/ingest-destino-poa-fixture.ts",
-    "inspect:destino-poa": "tsx src/commands/inspect-destino-poa.ts"
+    "inspect:destino-poa": "tsx src/commands/inspect-destino-poa.ts",
+    "dedup:scan": "tsx src/commands/dedup-scan.ts",
+    "dedup:review:list": "tsx src/commands/dedup-review-list.ts",
+    "dedup:review:same": "tsx src/commands/dedup-review-same.ts",
+    "dedup:review:different": "tsx src/commands/dedup-review-different.ts",
+    "ops:summary": "tsx src/commands/ops-summary.ts"
   },
   "dependencies": {
     "@cult/canonical-events": "workspace:*",
     "@cult/config": "workspace:*",
     "@cult/connectors": "workspace:*",
     "@cult/database": "workspace:*",
+    "@cult/deduplication": "workspace:*",
     "@cult/domain": "workspace:*"
   }
 }
