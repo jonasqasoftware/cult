@@ -20,7 +20,9 @@
     "dedup:review:different": "tsx src/commands/dedup-review-different.ts",
     "ops:summary": "tsx src/commands/ops-summary.ts",
     "sources:production-status": "tsx src/commands/sources-production-status.ts",
-    "product:summary": "tsx src/commands/product-summary.ts"
+    "product:summary": "tsx src/commands/product-summary.ts",
+    "demo:seed": "tsx src/commands/demo-seed.ts",
+    "demo:reset": "tsx src/commands/demo-reset.ts"
   },
   "dependencies": {
     "@cult/canonical-events": "workspace:*",

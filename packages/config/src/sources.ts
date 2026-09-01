@@ -79,6 +79,33 @@ export const MANUAL_BETA_SOURCE_DEFINITION = createSourceDefinition({
     "commercialUse=allowed because every event is human-curated with confirmed rights — see docs/sources/manual-beta.md. Not a template for relaxing an automated connector's commercialUse.",
 });
 
+// M10.2 — a development/demo-only source so the Home page can be reviewed with visually rich,
+// deterministic content (test-data/ui-demo/) instead of the golden fixtures' deliberately
+// broken `example.invalid` images. Every event is entirely fictional (see
+// docs/quality/UI_DEMO_DATASET.md) — there is no real-world rights question to resolve here,
+// unlike Ticketmaster/Destino POA. `commercialUse: "restricted"` is used anyway, deliberately,
+// purely to route this source through the exact same Production Data Gate mechanism
+// (ADR-0015) that blocks any other unapproved source — never "allowed": this content must
+// never reach production, permanently, by design, regardless of any future rights review.
+// `pnpm demo:seed` (apps/worker/src/commands/demo-seed.ts) additionally refuses to run at all
+// under CULT_ENV=production, as a second, independent guard — see that file's own comment.
+export const UI_DEMO_SOURCE_DEFINITION = createSourceDefinition({
+  id: "ui-demo",
+  name: "UI Demo Dataset (development/demo only)",
+  type: "manual",
+  enabled: true,
+  // No polling — ingestion is a human-triggered `pnpm demo:seed`, not a scheduled collector.
+  pollingIntervalMinutes: 1440,
+  authorityScore: 0,
+  commercialUse: "restricted",
+  connector: "ui-demo",
+  notes:
+    "Synthetic, fictional demo content for local UI/UX review only (M10.2) — never real-world " +
+    "data. commercialUse=restricted here is not a rights classification (there are no rights " +
+    "to clear for fictional content); it exists solely to keep this source blocked by the " +
+    "Production Data Gate (ADR-0015) permanently. Never change to 'allowed'.",
+});
+
 // The single source of truth for "every source CULT knows about" — used by the development
 // registry below and by `pnpm sources:production-status` (apps/worker/src/commands/
 // sources-production-status.ts) so a new connector only has to be added here once.
@@ -86,6 +113,7 @@ export const ALL_SOURCE_DEFINITIONS = [
   TICKETMASTER_SOURCE_DEFINITION,
   DESTINO_POA_SOURCE_DEFINITION,
   MANUAL_BETA_SOURCE_DEFINITION,
+  UI_DEMO_SOURCE_DEFINITION,
 ];
 
 export function createDevelopmentSourceRegistry(): SourceRegistryPort {

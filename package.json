@@ -40,6 +40,8 @@
     "ops:summary": "pnpm --filter @cult/worker run ops:summary",
     "sources:production-status": "pnpm --filter @cult/worker run sources:production-status",
     "product:summary": "pnpm --filter @cult/worker run product:summary",
+    "demo:seed": "pnpm --filter @cult/worker run demo:seed",
+    "demo:reset": "pnpm --filter @cult/worker run demo:reset",
     "e2e": "playwright test --config=e2e/playwright.config.ts",
     "e2e:smoke": "playwright test --config=e2e/playwright.smoke.config.ts",
     "e2e:visual": "playwright test --config=e2e/playwright.visual.config.ts",

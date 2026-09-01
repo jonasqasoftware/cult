@@ -5,6 +5,7 @@ import {
   DESTINO_POA_SOURCE_DEFINITION,
   MANUAL_BETA_SOURCE_DEFINITION,
   TICKETMASTER_SOURCE_DEFINITION,
+  UI_DEMO_SOURCE_DEFINITION,
 } from "./sources.js";
 
 describe("TICKETMASTER_SOURCE_DEFINITION", () => {
@@ -49,22 +50,35 @@ describe("MANUAL_BETA_SOURCE_DEFINITION", () => {
   });
 });
 
+describe("UI_DEMO_SOURCE_DEFINITION", () => {
+  // M10.2 — this source must never carry commercialUse "allowed": it exists purely to seed
+  // synthetic local UI-review content and must stay permanently blocked by the Production
+  // Data Gate (ADR-0015), unlike Ticketmaster/Destino POA, which could in principle be
+  // approved after a real rights review.
+  it('is registered with type "manual" and commercialUse never "allowed"', () => {
+    expect(UI_DEMO_SOURCE_DEFINITION.type).toBe("manual");
+    expect(UI_DEMO_SOURCE_DEFINITION.commercialUse).not.toBe("allowed");
+  });
+});
+
 describe("ALL_SOURCE_DEFINITIONS", () => {
-  it("lists exactly the three known sources", () => {
+  it("lists exactly the four known sources", () => {
     expect(ALL_SOURCE_DEFINITIONS.map((source) => source.id).sort()).toEqual([
       "destino-poa",
       "manual-beta",
       "ticketmaster",
+      "ui-demo",
     ]);
   });
 });
 
 describe("createDevelopmentSourceRegistry", () => {
-  it("registers ticketmaster, destino-poa, and manual-beta", () => {
+  it("registers ticketmaster, destino-poa, manual-beta, and ui-demo", () => {
     const registry = createDevelopmentSourceRegistry();
     expect(registry.get("ticketmaster")?.id).toBe("ticketmaster");
     expect(registry.get("destino-poa")?.id).toBe("destino-poa");
     expect(registry.get("manual-beta")?.id).toBe("manual-beta");
-    expect(registry.list()).toHaveLength(3);
+    expect(registry.get("ui-demo")?.id).toBe("ui-demo");
+    expect(registry.list()).toHaveLength(4);
   });
 });
