@@ -1,0 +1,18 @@
+.wrap {
+  max-width: var(--content-width-narrow);
+  margin: 0 auto;
+  padding: var(--space-8) var(--space-4);
+  text-align: center;
+}
+
+.heading {
+  font-size: var(--font-size-h1);
+  margin-bottom: var(--space-3);
+}
+
+.link {
+  display: inline-block;
+  margin-top: var(--space-4);
+  color: var(--color-accent);
+  font-weight: 700;
+}

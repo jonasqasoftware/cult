@@ -1,0 +1,14 @@
+.hero {
+  padding: var(--space-6) 0 var(--space-5);
+  display: grid;
+  gap: var(--space-4);
+}
+
+.heading {
+  margin: 0;
+  font-size: var(--font-size-display);
+  line-height: var(--line-height-tight);
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  max-width: 20ch;
+}

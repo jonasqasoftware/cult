@@ -1,0 +1,6 @@
+.notice {
+  margin: var(--space-2) 0 0;
+  font-size: var(--font-size-metadata);
+  color: var(--color-text-secondary);
+  max-width: var(--content-width-narrow);
+}

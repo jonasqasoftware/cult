@@ -1,0 +1,137 @@
+/* CULT design tokens (M8). A small, explicit foundation — not a finished brand system.
+   Editorial/urban/cultural, not corporate SaaS: warm paper background, ink text, a single
+   bold accent used sparingly, modest radii (never pill-shaped cards). */
+:root {
+  --color-background: #f6f3ec;
+  --color-surface: #ffffff;
+  --color-surface-muted: #efe9dd;
+  --color-text-primary: #17140f;
+  --color-text-secondary: #5c5749;
+  --color-border: #e2dbc9;
+  --color-accent: #c4401f;
+  --color-accent-contrast: #fffaf3;
+  --color-danger: #a3271a;
+  --color-focus: #1c56d6;
+
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+  --space-6: 2rem;
+  --space-7: 3rem;
+  --space-8: 4rem;
+
+  --radius-sm: 3px;
+  --radius-md: 6px;
+  --radius-lg: 10px;
+
+  --shadow-sm: 0 1px 2px rgba(23, 20, 15, 0.08);
+  --shadow-md: 0 4px 16px rgba(23, 20, 15, 0.12);
+
+  --font-family-base:
+    system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+
+  --font-size-display: clamp(2rem, 5vw, 3rem);
+  --font-size-h1: clamp(1.5rem, 4vw, 2.125rem);
+  --font-size-h2: 1.25rem;
+  --font-size-card-title: 1.0625rem;
+  --font-size-body: 1rem;
+  --font-size-metadata: 0.875rem;
+  --font-size-label: 0.8125rem;
+
+  --line-height-tight: 1.15;
+  --line-height-heading: 1.3;
+  --line-height-body: 1.5;
+
+  --content-width-narrow: 40rem;
+  --content-width-default: 72rem;
+
+  --tap-target-min: 44px;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  background: var(--color-background);
+  color-scheme: light;
+}
+
+body {
+  margin: 0;
+  background: var(--color-background);
+  color: var(--color-text-primary);
+  font-family: var(--font-family-base);
+  font-size: var(--font-size-body);
+  line-height: var(--line-height-body);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+img,
+picture,
+svg {
+  max-width: 100%;
+  display: block;
+}
+
+a {
+  color: inherit;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+}
+
+/* Visible, high-contrast focus ring everywhere — never suppressed. */
+:focus-visible {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+.skip-link {
+  position: absolute;
+  left: var(--space-3);
+  top: -48px;
+  z-index: 100;
+  background: var(--color-accent);
+  color: var(--color-accent-contrast);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-md);
+  font-weight: 600;
+  text-decoration: none;
+  transition: top 0.15s ease;
+}
+
+.skip-link:focus {
+  top: var(--space-3);
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

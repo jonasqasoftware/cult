@@ -24,5 +24,12 @@ export default tseslint.config(
       ],
     },
   },
+  {
+    // Runs in a Service Worker global scope, not Node or a browser window.
+    files: ["apps/web/public/sw.js"],
+    languageOptions: {
+      globals: { self: "readonly", clients: "readonly" },
+    },
+  },
   eslintConfigPrettier,
 );

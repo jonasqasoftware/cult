@@ -1,0 +1,110 @@
+.article {
+  max-width: var(--content-width-narrow);
+  margin: 0 auto;
+  padding-bottom: var(--space-8);
+}
+
+.body {
+  padding: var(--space-5) var(--space-4) 0;
+  display: grid;
+  gap: var(--space-4);
+}
+
+.status {
+  margin: 0;
+  display: inline-block;
+  color: var(--color-danger);
+  font-size: var(--font-size-label);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.category {
+  margin: 0;
+  color: var(--color-accent);
+  font-size: var(--font-size-label);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.title {
+  margin: 0;
+  font-size: var(--font-size-h1);
+  line-height: var(--line-height-heading);
+  font-weight: 800;
+  overflow-wrap: anywhere;
+}
+
+.occurrences {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: var(--space-1);
+  font-weight: 600;
+}
+
+.description {
+  margin: 0;
+  color: var(--color-text-primary);
+  line-height: var(--line-height-body);
+  white-space: pre-line;
+}
+
+.section {
+  border-top: 1px solid var(--color-border);
+  padding-top: var(--space-4);
+  display: grid;
+  gap: var(--space-2);
+}
+
+.sectionHeading {
+  margin: 0;
+  font-size: var(--font-size-h2);
+}
+
+.venueName {
+  margin: 0;
+  font-weight: 700;
+}
+
+.mapLink {
+  color: var(--color-accent);
+  font-weight: 600;
+  width: fit-content;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  align-items: center;
+}
+
+.ticketButton {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--tap-target-min);
+  padding: 0 var(--space-6);
+  border-radius: var(--radius-md);
+  background: var(--color-accent);
+  color: var(--color-accent-contrast);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.sources {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: var(--space-1);
+}
+
+.sources a {
+  color: var(--color-accent);
+  text-decoration: underline;
+  text-transform: capitalize;
+}

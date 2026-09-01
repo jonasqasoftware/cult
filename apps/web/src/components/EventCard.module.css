@@ -1,0 +1,80 @@
+.card {
+  list-style: none;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  overflow: hidden;
+}
+
+.link {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+}
+
+.link:hover .title {
+  color: var(--color-accent);
+}
+
+.body {
+  padding: var(--space-3) var(--space-4) var(--space-4);
+}
+
+.status {
+  margin: 0 0 var(--space-1);
+  display: inline-block;
+  color: var(--color-danger);
+  font-size: var(--font-size-label);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.date {
+  margin: 0 0 var(--space-1);
+  color: var(--color-accent);
+  font-size: var(--font-size-label);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.title {
+  margin: 0 0 var(--space-2);
+  font-size: var(--font-size-card-title);
+  line-height: var(--line-height-heading);
+  font-weight: 700;
+  /* Long titles never overflow the card. */
+  overflow-wrap: anywhere;
+}
+
+.meta {
+  margin: 0 0 var(--space-2);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 var(--space-2);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-metadata);
+}
+
+.meta span:not(:last-child)::after {
+  content: "·";
+  margin-left: var(--space-2);
+  color: var(--color-border);
+}
+
+.footer {
+  margin: 0;
+  display: flex;
+  gap: var(--space-3);
+  align-items: baseline;
+  font-size: var(--font-size-metadata);
+}
+
+.price {
+  font-weight: 700;
+}
+
+.distance {
+  color: var(--color-text-secondary);
+}

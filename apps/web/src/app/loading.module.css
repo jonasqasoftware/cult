@@ -1,0 +1,51 @@
+.page {
+  max-width: var(--content-width-default);
+  margin: 0 auto;
+  padding: var(--space-6) var(--space-4);
+}
+
+.heroSkeleton {
+  height: 5rem;
+  max-width: 24rem;
+  margin-bottom: var(--space-6);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(15.5rem, 1fr));
+  gap: var(--space-4);
+}
+
+.card {
+  height: 16rem;
+  border-radius: var(--radius-md);
+}
+
+.card,
+.heroSkeleton {
+  background: linear-gradient(
+    90deg,
+    var(--color-surface-muted) 25%,
+    var(--color-border) 37%,
+    var(--color-surface-muted) 63%
+  );
+  background-size: 400% 100%;
+  animation: shimmer 1.6s ease-in-out infinite;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0 50%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card,
+  .heroSkeleton {
+    animation: none;
+    background: var(--color-surface-muted);
+  }
+}
