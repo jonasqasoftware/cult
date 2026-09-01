@@ -11,7 +11,7 @@ import {
 import { createCanonicalEventRepository } from "../canonical-event-repository.js";
 import { upsertSource } from "../source-repository.js";
 import { connectTestDatabase, truncateAllTables } from "../test-support.js";
-import { discoverEvents } from "./discover-events.js";
+import { discoverEvents, InvalidDiscoveryCursorError } from "./discover-events.js";
 import { decodeCursor } from "./cursor.js";
 import { resolvePeriod } from "./period.js";
 
@@ -384,5 +384,14 @@ describe("discoverEvents — pagination", () => {
     const secondPage = await discoverEvents(connection.db, { limit: 2, geo, cursor: firstPage.nextCursor! });
     expect(secondPage.items.map((i) => i.event.id)).toEqual(["far"]);
     expect(secondPage.nextCursor).toBeNull();
+  });
+
+  // M7.1: a garbage cursor must raise a typed, identifiable error — apps/api relies on
+  // `instanceof` (never string-matching error.message) to tell "the client sent a bad
+  // cursor" (400) apart from "something unrelated broke" (500, see server.ts).
+  it("rejects a garbage cursor with InvalidDiscoveryCursorError", async () => {
+    await expect(discoverEvents(connection.db, { limit: 20, cursor: "not-a-real-cursor" })).rejects.toBeInstanceOf(
+      InvalidDiscoveryCursorError,
+    );
   });
 });

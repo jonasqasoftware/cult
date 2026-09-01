@@ -1,5 +1,12 @@
 import Fastify, { type FastifyInstance } from "fastify";
-import { createCanonicalEventRepository, discoverEvents, ping, type Database } from "@cult/database";
+import {
+  createCanonicalEventRepository,
+  discoverEvents,
+  InvalidDiscoveryCursorError,
+  listCategoryIds,
+  ping,
+  type Database,
+} from "@cult/database";
 import { toEventResponse } from "./events-response.js";
 import { parseDiscoveryQuery, type DiscoveryQueryError } from "./discovery-query.js";
 
@@ -71,13 +78,36 @@ export function buildServer(options: BuildServerOptions): FastifyInstance {
         pagination: { next_cursor: result.nextCursor },
       };
     } catch (error) {
-      return reply.code(400).type("application/problem+json").send({
-        type: "/problems/invalid-cursor",
-        title: "Invalid cursor",
-        status: 400,
-        detail: error instanceof Error ? error.message : "Invalid cursor",
+      // M7.1: only a cursor that genuinely fails to decode is a client error — classified by
+      // type, never by pattern-matching error.message. Anything else (a database error, a
+      // driver failure, ...) is an unexpected server-side failure: logged with full detail
+      // internally, but the response never carries SQL/hostnames/driver messages/stack.
+      if (error instanceof InvalidDiscoveryCursorError) {
+        return reply.code(400).type("application/problem+json").send({
+          type: "/problems/invalid-cursor",
+          title: "Invalid cursor",
+          status: 400,
+          detail: "The supplied pagination cursor is invalid",
+        });
+      }
+      request.log.error({ err: error }, "event discovery failed");
+      return reply.code(500).type("application/problem+json").send({
+        type: "/problems/internal-error",
+        title: "Internal server error",
+        status: 500,
+        detail: "An unexpected error occurred",
       });
     }
+  });
+
+  app.get("/v1/categories", async () => {
+    const categoryIds = await listCategoryIds(db);
+    // M7.1: there is no categories table / human-readable name source yet — id, name and
+    // slug all mirror the raw technical category id rather than inventing a translation or
+    // taxonomy (see packages/database/README.md "Categories").
+    return {
+      data: categoryIds.map((id) => ({ id, name: id, slug: id })),
+    };
   });
 
   app.get("/v1/events/:slug", async (request, reply) => {

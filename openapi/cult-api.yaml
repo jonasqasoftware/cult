@@ -114,6 +114,8 @@ paths:
                 $ref: "#/components/schemas/EventListResponse"
         "400":
           $ref: "#/components/responses/Problem"
+        "500":
+          $ref: "#/components/responses/Problem"
   /v1/events/{slug}:
     get:
       summary: Get one cultural event by slug
@@ -135,6 +137,10 @@ paths:
   /v1/categories:
     get:
       summary: List event categories
+      description: >-
+        Distinct category ids actually present on existing events — never a fixed/invented
+        taxonomy. There is no categories table or human-readable name source yet, so `name`
+        and `slug` currently mirror the raw technical `id` (see Category below).
       responses:
         "200":
           description: Categories
@@ -335,6 +341,9 @@ components:
 
     Category:
       type: object
+      description: >-
+        `name` and `slug` currently mirror `id` — no human-readable taxonomy exists yet
+        (MVP1: category ids are free-text, provider-derived; see CLAUDE.md).
       required: [id, name, slug]
       properties:
         id:

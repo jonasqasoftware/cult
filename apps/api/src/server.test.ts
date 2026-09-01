@@ -46,6 +46,7 @@ interface MakeEventOverrides {
   readonly venue?: ReturnType<typeof createVenue>;
   readonly price?: EventPrice;
   readonly status?: CanonicalEvent["status"];
+  readonly categoryId?: string;
 }
 
 function makeEvent(id: string, occurrence?: EventOccurrence, overrides: MakeEventOverrides = {}) {
@@ -80,6 +81,7 @@ function makeEvent(id: string, occurrence?: EventOccurrence, overrides: MakeEven
     updatedAt: new Date("2026-01-01T00:00:00Z"),
     ...(overrides.venue ? { venue: overrides.venue } : {}),
     ...(overrides.price ? { price: overrides.price } : {}),
+    ...(overrides.categoryId !== undefined ? { categoryId: overrides.categoryId } : {}),
   });
 }
 
@@ -117,6 +119,44 @@ describe("GET /ready (database unreachable)", () => {
       await unreachableApp.close();
       await unreachableConnection.close();
     }
+  });
+});
+
+// M7.1: discoverEvents was wrapped in a single generic catch that turned ANY failure —
+// including an unrelated database error — into a 400 invalid-cursor, potentially leaking the
+// real error message. Only a cursor that actually fails to decode may produce that response;
+// anything else is an internal-error 500 with a generic, public-safe detail.
+describe("GET /v1/events — error classification", () => {
+  it("classifies an unexpected database error as a generic 500, never leaking the driver message", async () => {
+    const unreachableConnectionString = "postgresql://cult:cult@127.0.0.1:1/nonexistent";
+    const unreachableConnection = createDatabaseConnection({
+      connectionString: unreachableConnectionString,
+    });
+    const unreachableApp = buildServer({ db: unreachableConnection.db, now: () => NOW });
+
+    try {
+      const response = await unreachableApp.inject({ method: "GET", url: "/v1/events" });
+      expect(response.statusCode).toBe(500);
+      expect(response.headers["content-type"]).toContain("application/problem+json");
+      const body = response.json();
+      expect(body.type).toBe("/problems/internal-error");
+      expect(body.detail).toBe("An unexpected error occurred");
+      expect(body.detail).not.toContain("127.0.0.1");
+      expect(JSON.stringify(body)).not.toContain(unreachableConnectionString);
+      expect(JSON.stringify(body).toLowerCase()).not.toContain("econnrefused");
+    } finally {
+      await unreachableApp.close();
+      await unreachableConnection.close();
+    }
+  });
+
+  it("still returns 400 invalid-cursor for a garbage cursor, with a generic public detail", async () => {
+    const response = await app.inject({ method: "GET", url: "/v1/events?cursor=garbage" });
+    expect(response.statusCode).toBe(400);
+    expect(response.headers["content-type"]).toContain("application/problem+json");
+    const body = response.json();
+    expect(body.type).toBe("/problems/invalid-cursor");
+    expect(body.detail).toBe("The supplied pagination cursor is invalid");
   });
 });
 
@@ -273,6 +313,33 @@ describe("GET /v1/events — discovery filters (contract tests)", () => {
 
     const explicitResponse = await app.inject({ method: "GET", url: "/v1/events?status=cancelled" });
     expect(explicitResponse.json().data.map((e: { slug: string }) => e.slug)).toEqual(["cancelled-evt"]);
+  });
+});
+
+// M7.1: OpenAPI documented this endpoint since M0 but server.ts never registered it —
+// a contract break. Categories come only from real CanonicalEvent.categoryId values, never
+// a hardcoded taxonomy (there is no categories table / human-readable name source yet).
+describe("GET /v1/categories", () => {
+  it("returns an empty list when no event has a category", async () => {
+    const response = await app.inject({ method: "GET", url: "/v1/categories" });
+    expect(response.statusCode).toBe(200);
+    expect(response.json()).toEqual({ data: [] });
+  });
+
+  it("returns each distinct category once, in deterministic order, matching the OpenAPI Category shape", async () => {
+    const repository = createCanonicalEventRepository(connection.db);
+    await repository.save(makeEvent("evt-theater", undefined, { categoryId: "theater" }));
+    await repository.save(makeEvent("evt-music-a", undefined, { categoryId: "music" }));
+    await repository.save(makeEvent("evt-music-b", undefined, { categoryId: "music" }));
+
+    const response = await app.inject({ method: "GET", url: "/v1/categories" });
+    expect(response.statusCode).toBe(200);
+    expect(response.json()).toEqual({
+      data: [
+        { id: "music", name: "music", slug: "music" },
+        { id: "theater", name: "theater", slug: "theater" },
+      ],
+    });
   });
 });
 

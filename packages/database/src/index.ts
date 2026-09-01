@@ -4,6 +4,7 @@ export * from "./ping.js";
 export * from "./raw-event-repository.js";
 export * from "./canonical-event-repository.js";
 export * from "./load-canonical-events-by-ids.js";
+export * from "./list-category-ids.js";
 export * from "./source-repository.js";
 
 // M7: Discovery API query layer — see discovery/discover-events.ts.

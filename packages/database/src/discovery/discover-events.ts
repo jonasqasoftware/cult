@@ -204,10 +204,21 @@ function buildCursorCondition(cursor: Cursor | undefined): SQL {
   return sql`(sort_instant, id) > (${cursor.sortInstant}::timestamptz, ${cursor.id})`;
 }
 
+// M7.1: a distinct, identifiable error class — never a generic Error whose .message the
+// caller has to pattern-match. apps/api uses `instanceof` to tell "the client sent a bad
+// cursor" (400 invalid-cursor) apart from any other failure (500 internal-error), so this
+// must never be thrown for anything other than a cursor that fails to decode.
+export class InvalidDiscoveryCursorError extends Error {
+  constructor() {
+    super("Invalid discovery cursor");
+    this.name = "InvalidDiscoveryCursorError";
+  }
+}
+
 function decodeCursorOrThrow(cursor: string, isNearby: boolean): Cursor {
   const result = isNearby ? decodeCursor(cursor, "nearby") : decodeCursor(cursor, "default");
   if (!result.ok) {
-    throw new Error("Invalid cursor");
+    throw new InvalidDiscoveryCursorError();
   }
   return result.value;
 }
