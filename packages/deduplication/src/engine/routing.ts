@@ -1,4 +1,5 @@
 import type { DetectedConflict } from "./conflicts.js";
+import type { AutoMergeEligibility } from "./eligibility.js";
 
 export type Routing = "auto_merge" | "review" | "separate";
 
@@ -29,9 +30,23 @@ function hasStrongConflict(conflicts: readonly DetectedConflict[]): boolean {
 // letting a low score push it down to separate — it's corroboration trouble, not proof of
 // non-identity. Precision of auto_merge matters far more than recall — sending a truly same
 // event to review is an acceptable cost; auto-merging two different events is not.
-export function decideRouting(score: number, conflicts: readonly DetectedConflict[]): Routing {
+//
+// M6.1: eligibility is a third, independent axis alongside score and conflicts — a perfect
+// score with zero conflicts can still be blocked from auto_merge (e.g. mixed temporal
+// precision, see engine/eligibility.ts). An ineligible pair behaves exactly like a soft
+// conflict for routing purposes: capped at review above the review threshold, separate below
+// it — never silently demoted straight to separate just because merging isn't safe yet.
+export function decideRouting(
+  score: number,
+  conflicts: readonly DetectedConflict[],
+  eligibility: AutoMergeEligibility,
+): Routing {
   if (hasStrongConflict(conflicts)) return "separate";
   if (conflicts.length > 0) return "review";
+
+  if (!eligibility.eligible) {
+    return score >= REVIEW_THRESHOLD ? "review" : "separate";
+  }
 
   if (score >= AUTO_MERGE_THRESHOLD) return "auto_merge";
   if (score >= REVIEW_THRESHOLD) return "review";

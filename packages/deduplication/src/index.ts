@@ -3,6 +3,7 @@
 // yet (see README.md "Limitations" and docs/adr/0015 if present).
 export * from "./engine/assess.js";
 export * from "./engine/conflicts.js";
+export * from "./engine/eligibility.js";
 export * from "./engine/score.js";
 export * from "./engine/routing.js";
 

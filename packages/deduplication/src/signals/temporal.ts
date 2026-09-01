@@ -31,9 +31,17 @@ function daysBetween(start: string, end: string): number {
   return Math.round((Date.parse(`${end}T00:00:00Z`) - Date.parse(`${start}T00:00:00Z`)) / MS_PER_DAY);
 }
 
+// Structural precision of the evidence being compared — independent of the numeric
+// similarity. ADR-0014: kind=date means "the source didn't report time precision," not "the
+// event runs all day," so a timed-vs-date pair is never as strong evidence as a timed-vs-timed
+// pair, even when the computed similarity is 1.0 (M6.1 "mixed temporal precision" — see
+// engine/eligibility.ts, which uses this to block auto_merge without touching the score).
+export type TemporalEvidence = "timed_pair" | "date_pair" | "mixed_precision";
+
 export interface TemporalAssessment {
   readonly compatible: boolean;
   readonly similarity: number;
+  readonly evidence: TemporalEvidence;
   readonly conflict?: "date_conflict" | "time_conflict";
 }
 
@@ -45,12 +53,13 @@ const TIME_CONFLICT_THRESHOLD_MINUTES = 180;
 
 export function assessTemporal(left: EventOccurrence, right: EventOccurrence): TemporalAssessment {
   if (left.kind === "timed" && right.kind === "timed") {
-    return assessTimedPair(left.startsAt, right.startsAt);
+    return { ...assessTimedPair(left.startsAt, right.startsAt), evidence: "timed_pair" };
   }
-  return assessRangePair(toDateRange(left), toDateRange(right));
+  const evidence: TemporalEvidence = left.kind === right.kind ? "date_pair" : "mixed_precision";
+  return { ...assessRangePair(toDateRange(left), toDateRange(right)), evidence };
 }
 
-function assessTimedPair(left: Date, right: Date): TemporalAssessment {
+function assessTimedPair(left: Date, right: Date): Omit<TemporalAssessment, "evidence"> {
   const sameLocalDate = toLocalDate(left) === toLocalDate(right);
   if (!sameLocalDate) {
     return { compatible: false, similarity: 0, conflict: "date_conflict" };
@@ -68,7 +77,7 @@ function assessTimedPair(left: Date, right: Date): TemporalAssessment {
 function assessRangePair(
   a: { start: string; end: string },
   b: { start: string; end: string },
-): TemporalAssessment {
+): Omit<TemporalAssessment, "evidence"> {
   const overlapStart = a.start > b.start ? a.start : b.start;
   const overlapEnd = a.end < b.end ? a.end : b.end;
 

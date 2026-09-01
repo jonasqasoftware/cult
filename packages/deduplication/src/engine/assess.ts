@@ -6,11 +6,13 @@ import { assessTemporal } from "../signals/temporal.js";
 import { performerOverlap } from "../signals/performer.js";
 import { assessUrl } from "../signals/url.js";
 import { detectConflicts, type DetectedConflict } from "./conflicts.js";
+import { assessAutoMergeEligibility, type AutoMergeEligibility } from "./eligibility.js";
 import { computeScore } from "./score.js";
 import { decideRouting, type Routing } from "./routing.js";
 
 export type { DetectedConflict } from "./conflicts.js";
 export type { Routing } from "./routing.js";
+export type { AutoMergeEligibility } from "./eligibility.js";
 
 export interface DedupSignals {
   readonly title: number;
@@ -26,6 +28,11 @@ export interface DedupAssessment {
   readonly routing: Routing;
   readonly signals: DedupSignals;
   readonly detectedConflicts: readonly DetectedConflict[];
+  // M6.1: whether the evidence is strong enough for an irreversible auto_merge at all — a
+  // separate axis from `score`. A perfect score can still be `autoMergeEligible: false` (e.g.
+  // mixed temporal precision); see engine/eligibility.ts.
+  readonly autoMergeEligible: boolean;
+  readonly autoMergeBlockers: readonly string[];
   readonly reasons: readonly string[];
 }
 
@@ -43,7 +50,9 @@ export function assessDuplicate(left: CanonicalEvent, right: CanonicalEvent): De
   const temporalAssessment =
     leftOccurrence && rightOccurrence
       ? assessTemporal(leftOccurrence, rightOccurrence)
-      : { compatible: false, similarity: 0 };
+      : // Unreachable in practice — createCanonicalEvent requires at least one occurrence —
+        // but TypeScript can't prove a readonly array is non-empty from its type alone.
+        ({ compatible: false, similarity: 0, evidence: "date_pair" } as const);
 
   const venue = assessVenueText(left.venue, right.venue);
   const geoDistance = geoDistanceMeters(left.venue ?? {}, right.venue ?? {});
@@ -52,6 +61,7 @@ export function assessDuplicate(left: CanonicalEvent, right: CanonicalEvent): De
   const url = assessUrl(left, right);
 
   const detectedConflicts = detectConflicts(left, right, temporalAssessment);
+  const eligibility = assessAutoMergeEligibility(temporalAssessment.evidence);
 
   const score = computeScore({
     title,
@@ -62,7 +72,7 @@ export function assessDuplicate(left: CanonicalEvent, right: CanonicalEvent): De
     ...(url !== undefined ? { url } : {}),
   });
 
-  const routing = decideRouting(score, detectedConflicts);
+  const routing = decideRouting(score, detectedConflicts, eligibility);
 
   const signals: DedupSignals = {
     title,
@@ -78,13 +88,16 @@ export function assessDuplicate(left: CanonicalEvent, right: CanonicalEvent): De
     routing,
     signals,
     detectedConflicts,
-    reasons: buildReasons(signals, detectedConflicts, routing),
+    autoMergeEligible: eligibility.eligible,
+    autoMergeBlockers: eligibility.blockers,
+    reasons: buildReasons(signals, detectedConflicts, eligibility, routing),
   };
 }
 
 function buildReasons(
   signals: DedupSignals,
   conflicts: readonly DetectedConflict[],
+  eligibility: AutoMergeEligibility,
   routing: Routing,
 ): string[] {
   const reasons: string[] = [];
@@ -108,6 +121,12 @@ function buildReasons(
     reasons.push(`critical conflicts detected: ${conflicts.join(", ")}`);
   } else {
     reasons.push("no critical conflicts detected");
+  }
+
+  if (!eligibility.eligible) {
+    for (const blocker of eligibility.blockers) {
+      reasons.push(`auto-merge blocked: ${blocker}`);
+    }
   }
 
   reasons.push(`routing: ${routing}`);

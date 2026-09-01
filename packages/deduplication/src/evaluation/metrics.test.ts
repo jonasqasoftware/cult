@@ -3,7 +3,15 @@ import { computeMetrics, type CaseResult } from "./metrics.js";
 import type { DedupAssessment } from "../engine/assess.js";
 
 function assessment(routing: DedupAssessment["routing"], score = 0.5): DedupAssessment {
-  return { score, routing, signals: { title: score, temporal: score }, detectedConflicts: [], reasons: [] };
+  return {
+    score,
+    routing,
+    signals: { title: score, temporal: score },
+    detectedConflicts: [],
+    autoMergeEligible: true,
+    autoMergeBlockers: [],
+    reasons: [],
+  };
 }
 
 function result(overrides: Partial<CaseResult> & Pick<CaseResult, "caseId" | "identityTruth" | "expectedRouting" | "assessment">): CaseResult {

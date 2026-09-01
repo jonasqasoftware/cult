@@ -13,6 +13,7 @@ describe("@cult/deduplication public exports", () => {
   it("exposes the in-memory deduplication engine (M6): assessment, signals and evaluation", () => {
     expect(typeof deduplication.assessDuplicate).toBe("function");
     expect(typeof deduplication.detectConflicts).toBe("function");
+    expect(typeof deduplication.assessAutoMergeEligibility).toBe("function");
     expect(typeof deduplication.computeScore).toBe("function");
     expect(typeof deduplication.decideRouting).toBe("function");
 

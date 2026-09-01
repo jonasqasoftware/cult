@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   createCanonicalEvent,
+  createDateOnlyEventOccurrence,
   createEventSourceReference,
   createTimedEventOccurrence,
   createVenue,
@@ -157,6 +158,92 @@ describe("assessDuplicate", () => {
     const result = assessDuplicate(left, right);
     expect(result.score).toBeGreaterThanOrEqual(0);
     expect(result.score).toBeLessThanOrEqual(1);
+  });
+
+  // M6.1: a perfect-looking match should not be enough for auto_merge when one source only
+  // reports a calendar date and the other reports a precise time — ADR-0014 means the
+  // date-only side never confirms the specific instant, no matter how well everything else
+  // lines up. This scenario is entirely synthetic (not from the golden dataset) to prove the
+  // rule generalizes rather than special-casing one fixture.
+  it("blocks auto_merge for an otherwise-perfect match with mixed temporal precision", () => {
+    const venue = createVenue({ id: "v", name: "Teatro Exemplo", city: "Porto Alegre", state: "RS" });
+    const performers = [{ id: "perf-1", name: "Artista Exemplo" }];
+
+    const left = makeEvent("left", {
+      title: "Concerto Experimental",
+      venue,
+      performers,
+      occurrences: [
+        createTimedEventOccurrence({
+          id: "left-occ",
+          eventId: "left",
+          startsAt: new Date("2026-09-25T20:00:00-03:00"),
+          status: "scheduled",
+        }),
+      ],
+    });
+    const right = makeEvent("right", {
+      title: "Concerto Experimental",
+      venue,
+      performers,
+      sources: [source("destino-poa")],
+      occurrences: [
+        createDateOnlyEventOccurrence({
+          id: "right-occ",
+          eventId: "right",
+          startDate: "2026-09-25",
+          status: "scheduled",
+        }),
+      ],
+    });
+
+    const result = assessDuplicate(left, right);
+    expect(result.score).toBeGreaterThanOrEqual(0.95);
+    expect(result.autoMergeEligible).toBe(false);
+    expect(result.autoMergeBlockers.length).toBeGreaterThan(0);
+    expect(result.routing).toBe("review");
+    expect(result.reasons.some((reason) => /mixed precision|time precision/i.test(reason))).toBe(true);
+  });
+
+  it("does not block auto_merge for a genuinely precise timed-vs-timed match", () => {
+    const venue = createVenue({ id: "v", name: "Teatro Exemplo", city: "Porto Alegre", state: "RS" });
+    const performers = [{ id: "perf-1", name: "Artista Exemplo" }];
+
+    const left = makeEvent("left", { title: "Concerto Experimental", venue, performers });
+    const right = makeEvent("right", {
+      title: "Concerto Experimental",
+      venue,
+      performers,
+      sources: [source("destino-poa")],
+    });
+
+    const result = assessDuplicate(left, right);
+    expect(result.autoMergeEligible).toBe(true);
+    expect(result.routing).toBe("auto_merge");
+  });
+
+  it("does not block auto_merge for a date-only-vs-date-only match (unchanged behavior)", () => {
+    const venue = createVenue({ id: "v", name: "Teatro Exemplo", city: "Porto Alegre", state: "RS" });
+
+    const left = makeEvent("left", {
+      title: "Concerto Experimental",
+      venue,
+      occurrences: [
+        createDateOnlyEventOccurrence({ id: "left-occ", eventId: "left", startDate: "2026-09-25", status: "scheduled" }),
+      ],
+    });
+    const right = makeEvent("right", {
+      title: "Concerto Experimental",
+      venue,
+      sources: [source("destino-poa")],
+      occurrences: [
+        createDateOnlyEventOccurrence({ id: "right-occ", eventId: "right", startDate: "2026-09-25", status: "scheduled" }),
+      ],
+    });
+
+    const result = assessDuplicate(left, right);
+    expect(result.autoMergeEligible).toBe(true);
+    expect(result.routing).toBe("auto_merge");
   });
 
   it("does not use id, slug or sourceId as a matching signal", () => {
