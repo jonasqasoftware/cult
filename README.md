@@ -51,7 +51,8 @@ packages/
   connectors/         M2/M3 — Ticketmaster + Destino POA client/adapter/normalizer
   canonical-events/   M2/M3 — slug gen, content hash, provisional score policy (shared)
   config/             M2/M3 — env loading, Source Registry (see docs/sources/*.md for legal status)
-  deduplication/      M5 — dedup logic (not started — see test-data/golden-events/cross-source-candidates.md)
+  deduplication/      M5 — golden dataset tooling (load/validate/summarize); no matching
+                        engine yet — see test-data/golden-events/deduplication/README.md
   ranking/            future — real quality score / ranking logic (not started)
   observability/      future — structured logging, ingestion metrics (not started)
 ```
@@ -96,6 +97,9 @@ pnpm ingest:ticketmaster:live-smoke  # bounded, read-only, never persists
 # command exists yet (commercialUse: unknown, HTML-scraped — see ADR-0013)
 pnpm ingest:destino-poa:fixture    # no network — reads the synthetic fixture
 pnpm inspect:destino-poa           # bounded, read-only live discovery spike, never persists
+
+# Cross-source dedup golden dataset (see test-data/golden-events/deduplication/README.md)
+pnpm dedup:dataset:summary         # pure statistics over the 40-case ground truth — no matching
 ```
 
 ## Quality checks

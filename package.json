@@ -28,6 +28,7 @@
     "ingest:ticketmaster:live-smoke": "pnpm --filter @cult/worker run ingest:ticketmaster:live-smoke",
     "ingest:destino-poa:fixture": "pnpm --filter @cult/worker run ingest:destino-poa:fixture",
     "inspect:destino-poa": "pnpm --filter @cult/worker run inspect:destino-poa",
+    "dedup:dataset:summary": "pnpm --filter @cult/deduplication run dedup:dataset:summary",
     "clean": "tsc -b --clean tsconfig.json && pnpm -r --if-present run clean"
   },
   "devDependencies": {

@@ -1,0 +1,904 @@
+{
+  "version": 1,
+  "description": "CULT cross-source deduplication golden dataset. Ground truth for a future Deduplication Engine (M6+) — see test-data/golden-events/deduplication/README.md. All events are synthetic and culturally plausible for Porto Alegre; no real event content is reproduced.",
+  "cases": [
+    {
+      "id": "GD-P01",
+      "description": "Exact match: identical title, venue, date and time.",
+      "identityTruth": "same",
+      "expectedRouting": "auto_merge",
+      "criticalConflicts": [],
+      "rationale": "Every strong signal agrees: title, venue, date, time and even the ticket URL match exactly across both sources. No plausible alternative reading.",
+      "tags": ["exact-title", "timed", "same-venue", "same-day"],
+      "difficulty": "easy",
+      "left": {
+        "id": "GD-P01-A", "slug": "gd-p01-a", "title": "Festival Jazz do Guaíba",
+        "occurrence": { "kind": "timed", "startsAt": "2026-09-10T20:00:00-03:00" },
+        "venue": { "id": "GD-P01-A-VENUE", "name": "Usina do Gasômetro", "address": "Av. Presidente João Goulart, 551 - Farroupilha", "latitude": -30.0298, "longitude": -51.2422 },
+        "ticketUrl": "https://example.invalid/festival-jazz-guaiba",
+        "source": { "sourceId": "ticketmaster", "externalId": "TM-GD-P01", "url": "https://example.invalid/tm/gd-p01" }
+      },
+      "right": {
+        "id": "GD-P01-B", "slug": "gd-p01-b", "title": "Festival Jazz do Guaíba",
+        "occurrence": { "kind": "timed", "startsAt": "2026-09-10T20:00:00-03:00" },
+        "venue": { "id": "GD-P01-B-VENUE", "name": "Usina do Gasômetro", "address": "Av. Presidente João Goulart, 551 - Farroupilha", "latitude": -30.0298, "longitude": -51.2422 },
+        "ticketUrl": "https://example.invalid/festival-jazz-guaiba",
+        "source": { "sourceId": "destino-poa", "externalId": "gd-p01-b", "url": "https://destinopoa.com.br/evento/gd-p01-b/" }
+      }
+    },
+    {
+      "id": "GD-P02",
+      "description": "Case-only title difference.",
+      "identityTruth": "same",
+      "expectedRouting": "auto_merge",
+      "criticalConflicts": [],
+      "rationale": "Titles differ only in letter casing; venue, date and time match exactly. Case is not a meaningful distinguishing signal.",
+      "tags": ["case", "timed", "same-venue"],
+      "difficulty": "easy",
+      "left": {
+        "id": "GD-P02-A", "slug": "gd-p02-a", "title": "Mostra Cinema da Cidade",
+        "occurrence": { "kind": "timed", "startsAt": "2026-11-14T19:00:00-03:00" },
+        "venue": { "id": "GD-P02-A-VENUE", "name": "Cinemateca Capitólio" },
+        "source": { "sourceId": "ticketmaster", "externalId": "TM-GD-P02", "url": "https://example.invalid/tm/gd-p02" }
+      },
+      "right": {
+        "id": "GD-P02-B", "slug": "gd-p02-b", "title": "mostra cinema da cidade",
+        "occurrence": { "kind": "timed", "startsAt": "2026-11-14T19:00:00-03:00" },
+        "venue": { "id": "GD-P02-B-VENUE", "name": "Cinemateca Capitólio" },
+        "source": { "sourceId": "destino-poa", "externalId": "gd-p02-b", "url": "https://destinopoa.com.br/evento/gd-p02-b/" }
+      }
+    },
+    {
+      "id": "GD-P03",
+      "description": "Accent-only title difference.",
+      "identityTruth": "same",
+      "expectedRouting": "auto_merge",
+      "criticalConflicts": [],
+      "rationale": "Titles differ only by a missing accent; venue, date and time match exactly.",
+      "tags": ["accent", "timed", "same-venue"],
+      "difficulty": "easy",
+      "left": {
+        "id": "GD-P03-A", "slug": "gd-p03-a", "title": "Sarau Joao Cabral",
+        "occurrence": { "kind": "timed", "startsAt": "2026-09-22T19:30:00-03:00" },
+        "venue": { "id": "GD-P03-A-VENUE", "name": "Casa de Cultura Mario Quintana" },
+        "source": { "sourceId": "ticketmaster", "externalId": "TM-GD-P03", "url": "https://example.invalid/tm/gd-p03" }
+      },
+      "right": {
+        "id": "GD-P03-B", "slug": "gd-p03-b", "title": "Sarau João Cabral",
+        "occurrence": { "kind": "timed", "startsAt": "2026-09-22T19:30:00-03:00" },
+        "venue": { "id": "GD-P03-B-VENUE", "name": "Casa de Cultura Mario Quintana" },
+        "source": { "sourceId": "destino-poa", "externalId": "gd-p03-b", "url": "https://destinopoa.com.br/evento/gd-p03-b/" }
+      }
+    },
+    {
+      "id": "GD-P04",
+      "description": "Punctuation and word substitution in title, otherwise consistent.",
+      "identityTruth": "same",
+      "expectedRouting": "review",
+      "criticalConflicts": [],
+      "rationale": "The ampersand/dash are replaced by a spelled-out 'e' with no dash — more than pure punctuation stripping. Venue, date and time still match exactly, but the compounded title change is enough that an automatic merge should not be assumed without a lower-risk normalization pass; this is why truth=same but routing=review.",
+      "tags": ["punctuation", "title-variation", "timed", "same-venue"],
+      "difficulty": "medium",
+      "left": {
+        "id": "GD-P04-A", "slug": "gd-p04-a", "title": "Rock & Blues — POA",
+        "occurrence": { "kind": "timed", "startsAt": "2026-10-08T21:00:00-03:00" },
+        "venue": { "id": "GD-P04-A-VENUE", "name": "Auditório Araújo Vianna" },
+        "source": { "sourceId": "ticketmaster", "externalId": "TM-GD-P04", "url": "https://example.invalid/tm/gd-p04" }
+      },
+      "right": {
+        "id": "GD-P04-B", "slug": "gd-p04-b", "title": "Rock e Blues POA",
+        "occurrence": { "kind": "timed", "startsAt": "2026-10-08T21:00:00-03:00" },
+        "venue": { "id": "GD-P04-B-VENUE", "name": "Auditório Araújo Vianna" },
+        "source": { "sourceId": "destino-poa", "externalId": "gd-p04-b", "url": "https://destinopoa.com.br/evento/gd-p04-b/" }
+      }
+    },
+    {
+      "id": "GD-P05",
+      "description": "Editorial suffix appended by one source.",
+      "identityTruth": "same",
+      "expectedRouting": "auto_merge",
+      "criticalConflicts": [],
+      "rationale": "One source appends a city suffix commonly used editorially by aggregators. The base title, venue, date and time all match exactly.",
+      "tags": ["editorial-suffix", "exact-title", "timed", "same-venue"],
+      "difficulty": "easy",
+      "left": {
+        "id": "GD-P05-A", "slug": "gd-p05-a", "title": "Festival do Guaíba",
+        "occurrence": { "kind": "timed", "startsAt": "2026-09-13T18:00:00-03:00" },
+        "venue": { "id": "GD-P05-A-VENUE", "name": "Parque Maurício Sirotsky Sobrinho" },
+        "source": { "sourceId": "ticketmaster", "externalId": "TM-GD-P05", "url": "https://example.invalid/tm/gd-p05" }
+      },
+      "right": {
+        "id": "GD-P05-B", "slug": "gd-p05-b", "title": "Festival do Guaíba | Porto Alegre",
+        "occurrence": { "kind": "timed", "startsAt": "2026-09-13T18:00:00-03:00" },
+        "venue": { "id": "GD-P05-B-VENUE", "name": "Parque Maurício Sirotsky Sobrinho" },
+        "source": { "sourceId": "destino-poa", "externalId": "gd-p05-b", "url": "https://destinopoa.com.br/evento/gd-p05-b/" }
+      }
+    },
+    {
+      "id": "GD-P06",
+      "description": "Abbreviated venue name with near-identical coordinates.",
+      "identityTruth": "same",
+      "expectedRouting": "auto_merge",
+      "criticalConflicts": [],
+      "rationale": "One source uses the venue's short public name; coordinates from both sources place it at the same physical location within a few meters. Title, date and time also match exactly.",
+      "tags": ["venue-alias", "timed", "geo-close"],
+      "difficulty": "easy",
+      "left": {
+        "id": "GD-P06-A", "slug": "gd-p06-a", "title": "Noite de Tango",
+        "occurrence": { "kind": "timed", "startsAt": "2026-09-17T20:30:00-03:00" },
+        "venue": { "id": "GD-P06-A-VENUE", "name": "Auditório Araújo Vianna", "latitude": -30.0278, "longitude": -51.2170 },
+        "source": { "sourceId": "ticketmaster", "externalId": "TM-GD-P06", "url": "https://example.invalid/tm/gd-p06" }
+      },
+      "right": {
+        "id": "GD-P06-B", "slug": "gd-p06-b", "title": "Noite de Tango",
+        "occurrence": { "kind": "timed", "startsAt": "2026-09-17T20:30:00-03:00" },
+        "venue": { "id": "GD-P06-B-VENUE", "name": "Araújo Vianna", "latitude": -30.0279, "longitude": -51.2169 },
+        "source": { "sourceId": "destino-poa", "externalId": "gd-p06-b", "url": "https://destinopoa.com.br/evento/gd-p06-b/" }
+      }
+    },
+    {
+      "id": "GD-P07",
+      "description": "Venue name orthographic variation (missing accent) plus abbstandard casing.",
+      "identityTruth": "same",
+      "expectedRouting": "auto_merge",
+      "criticalConflicts": [],
+      "rationale": "Venue name differs only by a missing accent on 'Mário'; title, date and time all match exactly.",
+      "tags": ["venue-alias", "accent", "timed"],
+      "difficulty": "easy",
+      "left": {
+        "id": "GD-P07-A", "slug": "gd-p07-a", "title": "Oficina de Cerâmica",
+        "occurrence": { "kind": "timed", "startsAt": "2026-09-24T14:00:00-03:00" },
+        "venue": { "id": "GD-P07-A-VENUE", "name": "Casa de Cultura Mario Quintana" },
+        "source": { "sourceId": "ticketmaster", "externalId": "TM-GD-P07", "url": "https://example.invalid/tm/gd-p07" }
+      },
+      "right": {
+        "id": "GD-P07-B", "slug": "gd-p07-b", "title": "Oficina de Cerâmica",
+        "occurrence": { "kind": "timed", "startsAt": "2026-09-24T14:00:00-03:00" },
+        "venue": { "id": "GD-P07-B-VENUE", "name": "Casa de Cultura Mário Quintana" },
+        "source": { "sourceId": "destino-poa", "externalId": "gd-p07-b", "url": "https://destinopoa.com.br/evento/gd-p07-b/" }
+      }
+    },
+    {
+      "id": "GD-P08",
+      "description": "Same instant represented with different UTC offset notation.",
+      "identityTruth": "same",
+      "expectedRouting": "auto_merge",
+      "criticalConflicts": [],
+      "rationale": "22:00 -03:00 and 01:00+00:00 the next calendar day are the exact same instant. Venue and title also match exactly.",
+      "tags": ["timed", "offset-equivalent", "same-venue"],
+      "difficulty": "easy",
+      "left": {
+        "id": "GD-P08-A", "slug": "gd-p08-a", "title": "Recital de Piano",
+        "occurrence": { "kind": "timed", "startsAt": "2026-09-15T22:00:00-03:00" },
+        "venue": { "id": "GD-P08-A-VENUE", "name": "Teatro São Pedro" },
+        "source": { "sourceId": "ticketmaster", "externalId": "TM-GD-P08", "url": "https://example.invalid/tm/gd-p08" }
+      },
+      "right": {
+        "id": "GD-P08-B", "slug": "gd-p08-b", "title": "Recital de Piano",
+        "occurrence": { "kind": "timed", "startsAt": "2026-09-16T01:00:00+00:00" },
+        "venue": { "id": "GD-P08-B-VENUE", "name": "Teatro São Pedro" },
+        "source": { "sourceId": "destino-poa", "externalId": "gd-p08-b", "url": "https://destinopoa.com.br/evento/gd-p08-b/" }
+      }
+    },
+    {
+      "id": "GD-P09",
+      "description": "Performer present on one side only; the other side adds a companion act to the same performer name.",
+      "identityTruth": "same",
+      "expectedRouting": "auto_merge",
+      "criticalConflicts": [],
+      "rationale": "Same title, venue and time; one source lists a fuller performer credit than the other. Performer completeness differs but does not contradict identity.",
+      "tags": ["missing-performer", "timed", "same-venue"],
+      "difficulty": "easy",
+      "left": {
+        "id": "GD-P09-A", "slug": "gd-p09-a", "title": "Tributo Bossa Nova",
+        "occurrence": { "kind": "timed", "startsAt": "2026-09-19T20:00:00-03:00" },
+        "venue": { "id": "GD-P09-A-VENUE", "name": "Salão de Atos da UFRGS" },
+        "performers": [{ "id": "GD-P09-A-PERF-1", "name": "Trio Bossa Sul" }],
+        "source": { "sourceId": "ticketmaster", "externalId": "TM-GD-P09", "url": "https://example.invalid/tm/gd-p09" }
+      },
+      "right": {
+        "id": "GD-P09-B", "slug": "gd-p09-b", "title": "Tributo Bossa Nova",
+        "occurrence": { "kind": "timed", "startsAt": "2026-09-19T20:00:00-03:00" },
+        "venue": { "id": "GD-P09-B-VENUE", "name": "Salão de Atos da UFRGS" },
+        "source": { "sourceId": "destino-poa", "externalId": "gd-p09-b", "url": "https://destinopoa.com.br/evento/gd-p09-b/" }
+      }
+    },
+    {
+      "id": "GD-P10",
+      "description": "Description and image present on one side only.",
+      "identityTruth": "same",
+      "expectedRouting": "auto_merge",
+      "criticalConflicts": [],
+      "rationale": "Same title, venue and time; one source is simply thinner on optional editorial content.",
+      "tags": ["missing-description", "missing-image", "timed"],
+      "difficulty": "easy",
+      "left": {
+        "id": "GD-P10-A", "slug": "gd-p10-a", "title": "Noite de Curtas",
+        "description": "Sessão de curtas-metragens gaúchos.",
+        "imageUrl": "https://example.invalid/gd-p10.webp",
+        "occurrence": { "kind": "timed", "startsAt": "2026-10-20T19:30:00-03:00" },
+        "venue": { "id": "GD-P10-A-VENUE", "name": "Cinemateca Capitólio" },
+        "source": { "sourceId": "ticketmaster", "externalId": "TM-GD-P10", "url": "https://example.invalid/tm/gd-p10" }
+      },
+      "right": {
+        "id": "GD-P10-B", "slug": "gd-p10-b", "title": "Noite de Curtas",
+        "occurrence": { "kind": "timed", "startsAt": "2026-10-20T19:30:00-03:00" },
+        "venue": { "id": "GD-P10-B-VENUE", "name": "Cinemateca Capitólio" },
+        "source": { "sourceId": "destino-poa", "externalId": "gd-p10-b", "url": "https://destinopoa.com.br/evento/gd-p10-b/" }
+      }
+    },
+    {
+      "id": "GD-P11",
+      "description": "Price present on one side only.",
+      "identityTruth": "same",
+      "expectedRouting": "auto_merge",
+      "criticalConflicts": [],
+      "rationale": "Same title, venue and time; only one source publishes a price.",
+      "tags": ["missing-price", "timed", "same-venue"],
+      "difficulty": "easy",
+      "left": {
+        "id": "GD-P11-A", "slug": "gd-p11-a", "title": "Feira de Vinil",
+        "occurrence": { "kind": "timed", "startsAt": "2026-09-27T11:00:00-03:00" },
+        "venue": { "id": "GD-P11-A-VENUE", "name": "Mercado Público" },
+        "price": { "free": false, "min": 10, "max": 10 },
+        "source": { "sourceId": "ticketmaster", "externalId": "TM-GD-P11", "url": "https://example.invalid/tm/gd-p11" }
+      },
+      "right": {
+        "id": "GD-P11-B", "slug": "gd-p11-b", "title": "Feira de Vinil",
+        "occurrence": { "kind": "timed", "startsAt": "2026-09-27T11:00:00-03:00" },
+        "venue": { "id": "GD-P11-B-VENUE", "name": "Mercado Público" },
+        "source": { "sourceId": "destino-poa", "externalId": "gd-p11-b", "url": "https://destinopoa.com.br/evento/gd-p11-b/" }
+      }
+    },
+    {
+      "id": "GD-P12",
+      "description": "One source has a fuller street address; the other only the venue name.",
+      "identityTruth": "same",
+      "expectedRouting": "auto_merge",
+      "criticalConflicts": [],
+      "rationale": "Same title, venue name, date and time; address completeness differs but does not contradict identity.",
+      "tags": ["partial-address", "timed", "same-venue"],
+      "difficulty": "easy",
+      "left": {
+        "id": "GD-P12-A", "slug": "gd-p12-a", "title": "Contação de Histórias",
+        "occurrence": { "kind": "timed", "startsAt": "2026-09-06T16:00:00-03:00" },
+        "venue": { "id": "GD-P12-A-VENUE", "name": "Praça da Alfândega", "address": "Praça da Alfândega, s/n - Centro Histórico" },
+        "source": { "sourceId": "ticketmaster", "externalId": "TM-GD-P12", "url": "https://example.invalid/tm/gd-p12" }
+      },
+      "right": {
+        "id": "GD-P12-B", "slug": "gd-p12-b", "title": "Contação de Histórias",
+        "occurrence": { "kind": "timed", "startsAt": "2026-09-06T16:00:00-03:00" },
+        "venue": { "id": "GD-P12-B-VENUE", "name": "Praça da Alfândega" },
+        "source": { "sourceId": "destino-poa", "externalId": "gd-p12-b", "url": "https://destinopoa.com.br/evento/gd-p12-b/" }
+      }
+    },
+    {
+      "id": "GD-P13",
+      "description": "Same event, but one source reports a precise time and the other only the date.",
+      "identityTruth": "same",
+      "expectedRouting": "review",
+      "criticalConflicts": [],
+      "rationale": "We know (by dataset construction) this is the same vernissage. But mixed temporal precision means an automatic merge would silently upgrade the date-only record's confidence beyond what its own source actually published — route to review instead. This case does NOT establish a general rule that timed and date-only records are interchangeable.",
+      "tags": ["timed", "date-only", "mixed-precision", "same-venue", "same-day"],
+      "difficulty": "medium",
+      "left": {
+        "id": "GD-P13-A", "slug": "gd-p13-a", "title": "Vernissage Coletiva de Fotografia",
+        "occurrence": { "kind": "timed", "startsAt": "2026-09-05T19:00:00-03:00" },
+        "venue": { "id": "GD-P13-A-VENUE", "name": "Santander Cultural" },
+        "source": { "sourceId": "ticketmaster", "externalId": "TM-GD-P13", "url": "https://example.invalid/tm/gd-p13" }
+      },
+      "right": {
+        "id": "GD-P13-B", "slug": "gd-p13-b", "title": "Vernissage Coletiva de Fotografia",
+        "occurrence": { "kind": "date", "startDate": "2026-09-05" },
+        "venue": { "id": "GD-P13-B-VENUE", "name": "Santander Cultural" },
+        "source": { "sourceId": "destino-poa", "externalId": "gd-p13-b", "url": "https://destinopoa.com.br/evento/gd-p13-b/" }
+      }
+    },
+    {
+      "id": "GD-P14",
+      "description": "Same event, categorized differently by each source.",
+      "identityTruth": "same",
+      "expectedRouting": "auto_merge",
+      "criticalConflicts": [],
+      "rationale": "Title, venue, date and time match exactly; only the editorial category labels differ, which is expected across independently-curated sources.",
+      "tags": ["category-mismatch", "timed", "same-venue"],
+      "difficulty": "easy",
+      "left": {
+        "id": "GD-P14-A", "slug": "gd-p14-a", "title": "Roda de Samba na Cidade Baixa",
+        "categoryId": "cultural", "subcategories": ["show-de-musica"],
+        "occurrence": { "kind": "timed", "startsAt": "2026-09-11T21:00:00-03:00" },
+        "venue": { "id": "GD-P14-A-VENUE", "name": "Espaço Cultural Cidade Baixa" },
+        "source": { "sourceId": "ticketmaster", "externalId": "TM-GD-P14", "url": "https://example.invalid/tm/gd-p14" }
+      },
+      "right": {
+        "id": "GD-P14-B", "slug": "gd-p14-b", "title": "Roda de Samba na Cidade Baixa",
+        "categoryId": "musica", "subcategories": ["popular"],
+        "occurrence": { "kind": "timed", "startsAt": "2026-09-11T21:00:00-03:00" },
+        "venue": { "id": "GD-P14-B-VENUE", "name": "Espaço Cultural Cidade Baixa" },
+        "source": { "sourceId": "destino-poa", "externalId": "gd-p14-b", "url": "https://destinopoa.com.br/evento/gd-p14-b/" }
+      }
+    },
+    {
+      "id": "GD-P15",
+      "description": "Minor title wording difference with consistent venue and time; performer name extended by one source.",
+      "identityTruth": "same",
+      "expectedRouting": "auto_merge",
+      "criticalConflicts": [],
+      "rationale": "Dropping the word 'de' does not change the title's meaning; venue and time match exactly. Performer credit is fuller on one side (adds a backing act) without contradicting identity — performer detail is a useful but non-authoritative signal.",
+      "tags": ["title-variation", "timed", "same-venue", "same-performer"],
+      "difficulty": "medium",
+      "left": {
+        "id": "GD-P15-A", "slug": "gd-p15-a", "title": "Mostra de Curtas Gaúchos",
+        "occurrence": { "kind": "timed", "startsAt": "2026-11-07T19:00:00-03:00" },
+        "venue": { "id": "GD-P15-A-VENUE", "name": "Cinemateca Capitólio" },
+        "performers": [{ "id": "GD-P15-A-PERF-1", "name": "Duo Sul" }],
+        "source": { "sourceId": "ticketmaster", "externalId": "TM-GD-P15", "url": "https://example.invalid/tm/gd-p15" }
+      },
+      "right": {
+        "id": "GD-P15-B", "slug": "gd-p15-b", "title": "Mostra Curtas Gaúchos",
+        "occurrence": { "kind": "timed", "startsAt": "2026-11-07T19:00:00-03:00" },
+        "venue": { "id": "GD-P15-B-VENUE", "name": "Cinemateca Capitólio" },
+        "performers": [{ "id": "GD-P15-B-PERF-1", "name": "Duo Sul e Banda" }],
+        "source": { "sourceId": "destino-poa", "externalId": "gd-p15-b", "url": "https://destinopoa.com.br/evento/gd-p15-b/" }
+      }
+    },
+    {
+      "id": "GD-N01",
+      "description": "Generic title, same day, different venues and neighborhoods.",
+      "identityTruth": "different",
+      "expectedRouting": "separate",
+      "criticalConflicts": ["venue_conflict"],
+      "rationale": "A generic title alone means nothing; these are two unrelated neighborhood association events happening the same evening in different parts of the city.",
+      "tags": ["generic-title", "different-venue", "same-day"],
+      "difficulty": "medium",
+      "left": {
+        "id": "GD-N01-A", "slug": "gd-n01-a", "title": "Noite Cultural",
+        "occurrence": { "kind": "timed", "startsAt": "2026-09-19T19:00:00-03:00" },
+        "venue": { "id": "GD-N01-A-VENUE", "name": "Salão Comunitário Bom Fim" },
+        "source": { "sourceId": "ticketmaster", "externalId": "TM-GD-N01", "url": "https://example.invalid/tm/gd-n01" }
+      },
+      "right": {
+        "id": "GD-N01-B", "slug": "gd-n01-b", "title": "Noite Cultural",
+        "occurrence": { "kind": "timed", "startsAt": "2026-09-19T20:00:00-03:00" },
+        "venue": { "id": "GD-N01-B-VENUE", "name": "Salão Comunitário Cidade Baixa" },
+        "source": { "sourceId": "destino-poa", "externalId": "gd-n01-b", "url": "https://destinopoa.com.br/evento/gd-n01-b/" }
+      }
+    },
+    {
+      "id": "GD-N02",
+      "description": "Same title and venue, dates two months apart.",
+      "identityTruth": "different",
+      "expectedRouting": "separate",
+      "criticalConflicts": ["date_conflict"],
+      "rationale": "Same recurring showcase name and venue, but these are two distinct monthly editions, not the same listing.",
+      "tags": ["same-venue", "same-title", "different-date"],
+      "difficulty": "easy",
+      "left": {
+        "id": "GD-N02-A", "slug": "gd-n02-a", "title": "Mostra Cinema da Cidade",
+        "occurrence": { "kind": "timed", "startsAt": "2026-09-10T19:00:00-03:00" },
+        "venue": { "id": "GD-N02-A-VENUE", "name": "Cinemateca Capitólio" },
+        "source": { "sourceId": "ticketmaster", "externalId": "TM-GD-N02", "url": "https://example.invalid/tm/gd-n02" }
+      },
+      "right": {
+        "id": "GD-N02-B", "slug": "gd-n02-b", "title": "Mostra Cinema da Cidade",
+        "occurrence": { "kind": "timed", "startsAt": "2026-11-14T19:00:00-03:00" },
+        "venue": { "id": "GD-N02-B-VENUE", "name": "Cinemateca Capitólio" },
+        "source": { "sourceId": "destino-poa", "externalId": "gd-n02-b", "url": "https://destinopoa.com.br/evento/gd-n02-b/" }
+      }
+    },
+    {
+      "id": "GD-N03",
+      "description": "Same title, venue and day, clearly separate afternoon and night sessions.",
+      "identityTruth": "different",
+      "expectedRouting": "separate",
+      "criticalConflicts": ["time_conflict"],
+      "rationale": "Two independent theater groups happen to use the same open-mic title the same day at the same venue; the five-hour gap and distinct producers make these separate sessions, not one listing reported twice.",
+      "tags": ["same-venue", "same-day", "different-title"],
+      "difficulty": "medium",
+      "left": {
+        "id": "GD-N03-A", "slug": "gd-n03-a", "title": "Cena Aberta",
+        "occurrence": { "kind": "timed", "startsAt": "2026-09-20T15:00:00-03:00" },
+        "venue": { "id": "GD-N03-A-VENUE", "name": "Casa de Cultura Mario Quintana" },
+        "source": { "sourceId": "ticketmaster", "externalId": "TM-GD-N03", "url": "https://example.invalid/tm/gd-n03" }
+      },
+      "right": {
+        "id": "GD-N03-B", "slug": "gd-n03-b", "title": "Cena Aberta",
+        "occurrence": { "kind": "timed", "startsAt": "2026-09-20T20:30:00-03:00" },
+        "venue": { "id": "GD-N03-B-VENUE", "name": "Casa de Cultura Mario Quintana" },
+        "source": { "sourceId": "destino-poa", "externalId": "gd-n03-b", "url": "https://destinopoa.com.br/evento/gd-n03-b/" }
+      }
+    },
+    {
+      "id": "GD-N04",
+      "description": "Similar title, different venue, different date.",
+      "identityTruth": "different",
+      "expectedRouting": "separate",
+      "criticalConflicts": ["venue_conflict", "date_conflict"],
+      "rationale": "Two distinct neighborhood fairs with similar naming conventions ('Feira Cultural + bairro') in different neighborhoods on different dates.",
+      "tags": ["similar-title", "different-venue", "different-date"],
+      "difficulty": "easy",
+      "left": {
+        "id": "GD-N04-A", "slug": "gd-n04-a", "title": "Feira Cultural Bom Fim",
+        "occurrence": { "kind": "timed", "startsAt": "2026-09-06T10:00:00-03:00" },
+        "venue": { "id": "GD-N04-A-VENUE", "name": "Praça Garibaldi" },
+        "source": { "sourceId": "ticketmaster", "externalId": "TM-GD-N04", "url": "https://example.invalid/tm/gd-n04" }
+      },
+      "right": {
+        "id": "GD-N04-B", "slug": "gd-n04-b", "title": "Feira Cultural Cidade Baixa",
+        "occurrence": { "kind": "timed", "startsAt": "2026-10-11T10:00:00-03:00" },
+        "venue": { "id": "GD-N04-B-VENUE", "name": "Praça Garibáldi da Cidade Baixa" },
+        "source": { "sourceId": "destino-poa", "externalId": "gd-n04-b", "url": "https://destinopoa.com.br/evento/gd-n04-b/" }
+      }
+    },
+    {
+      "id": "GD-N05",
+      "description": "Same performer, two independent events.",
+      "identityTruth": "different",
+      "expectedRouting": "separate",
+      "criticalConflicts": ["venue_conflict", "date_conflict"],
+      "rationale": "Sharing a performer is not identity — a touring/local DJ plays multiple distinct dates and venues. Illustrates that performer alone is a weak signal.",
+      "tags": ["same-performer", "different-venue", "different-date"],
+      "difficulty": "easy",
+      "left": {
+        "id": "GD-N05-A", "slug": "gd-n05-a", "title": "Set Eletrônico na Orla",
+        "occurrence": { "kind": "timed", "startsAt": "2026-09-18T23:00:00-03:00" },
+        "venue": { "id": "GD-N05-A-VENUE", "name": "Parque Maurício Sirotsky Sobrinho" },
+        "performers": [{ "id": "GD-N05-A-PERF-1", "name": "DJ Lua" }],
+        "source": { "sourceId": "ticketmaster", "externalId": "TM-GD-N05", "url": "https://example.invalid/tm/gd-n05" }
+      },
+      "right": {
+        "id": "GD-N05-B", "slug": "gd-n05-b", "title": "Festa Synth POA",
+        "occurrence": { "kind": "timed", "startsAt": "2026-10-02T23:00:00-03:00" },
+        "venue": { "id": "GD-N05-B-VENUE", "name": "Espaço Cultural 235" },
+        "performers": [{ "id": "GD-N05-B-PERF-1", "name": "DJ Lua" }],
+        "source": { "sourceId": "destino-poa", "externalId": "gd-n05-b", "url": "https://destinopoa.com.br/evento/gd-n05-b/" }
+      }
+    },
+    {
+      "id": "GD-N06",
+      "description": "Main festival vs. its after-party.",
+      "identityTruth": "different",
+      "expectedRouting": "separate",
+      "criticalConflicts": ["event_scope_conflict", "venue_conflict"],
+      "rationale": "The after-party is a distinct, separately-ticketed event at a different venue later the same night, not the festival itself.",
+      "tags": ["festival-subevent", "same-title-prefix", "different-venue"],
+      "difficulty": "medium",
+      "left": {
+        "id": "GD-N06-A", "slug": "gd-n06-a", "title": "Festival Jazz do Guaíba",
+        "occurrence": { "kind": "timed", "startsAt": "2026-09-10T20:00:00-03:00" },
+        "venue": { "id": "GD-N06-A-VENUE", "name": "Usina do Gasômetro" },
+        "source": { "sourceId": "ticketmaster", "externalId": "TM-GD-N06", "url": "https://example.invalid/tm/gd-n06" }
+      },
+      "right": {
+        "id": "GD-N06-B", "slug": "gd-n06-b", "title": "Festival Jazz do Guaíba - After Party",
+        "occurrence": { "kind": "timed", "startsAt": "2026-09-11T01:00:00-03:00" },
+        "venue": { "id": "GD-N06-B-VENUE", "name": "Opinião" },
+        "source": { "sourceId": "destino-poa", "externalId": "gd-n06-b", "url": "https://destinopoa.com.br/evento/gd-n06-b/" }
+      }
+    },
+    {
+      "id": "GD-N07",
+      "description": "Main showcase vs. a workshop that is part of it.",
+      "identityTruth": "different",
+      "expectedRouting": "separate",
+      "criticalConflicts": ["event_scope_conflict"],
+      "rationale": "The screenwriting workshop is a sub-activity of the festival, held earlier the same day in a different room. It has its own attendee-facing listing and is not the featured screening event.",
+      "tags": ["festival-subevent", "same-venue", "same-day"],
+      "difficulty": "hard",
+      "left": {
+        "id": "GD-N07-A", "slug": "gd-n07-a", "title": "Mostra Cinema da Cidade",
+        "occurrence": { "kind": "timed", "startsAt": "2026-11-14T19:00:00-03:00" },
+        "venue": { "id": "GD-N07-A-VENUE", "name": "Cinemateca Capitólio" },
+        "source": { "sourceId": "ticketmaster", "externalId": "TM-GD-N07", "url": "https://example.invalid/tm/gd-n07" }
+      },
+      "right": {
+        "id": "GD-N07-B", "slug": "gd-n07-b", "title": "Mostra Cinema da Cidade - Oficina de Roteiro",
+        "occurrence": { "kind": "timed", "startsAt": "2026-11-14T15:00:00-03:00" },
+        "venue": { "id": "GD-N07-B-VENUE", "name": "Cinemateca Capitólio" },
+        "source": { "sourceId": "destino-poa", "externalId": "gd-n07-b", "url": "https://destinopoa.com.br/evento/gd-n07-b/" }
+      }
+    },
+    {
+      "id": "GD-N08",
+      "description": "Original artist show vs. a tribute act.",
+      "identityTruth": "different",
+      "expectedRouting": "separate",
+      "criticalConflicts": ["performer_conflict", "venue_conflict", "date_conflict"],
+      "rationale": "A tribute night performed by different musicians is not the headline artist's own show, despite naming the same artist.",
+      "tags": ["tribute", "different-venue", "different-date"],
+      "difficulty": "medium",
+      "left": {
+        "id": "GD-N08-A", "slug": "gd-n08-a", "title": "Noite Hip-Hop POA",
+        "occurrence": { "kind": "timed", "startsAt": "2026-10-01T21:00:00-03:00" },
+        "venue": { "id": "GD-N08-A-VENUE", "name": "Auditório Araújo Vianna" },
+        "performers": [{ "id": "GD-N08-A-PERF-1", "name": "MC Sul" }],
+        "source": { "sourceId": "ticketmaster", "externalId": "TM-GD-N08", "url": "https://example.invalid/tm/gd-n08" }
+      },
+      "right": {
+        "id": "GD-N08-B", "slug": "gd-n08-b", "title": "Tributo a MC Sul",
+        "occurrence": { "kind": "timed", "startsAt": "2026-10-15T21:00:00-03:00" },
+        "venue": { "id": "GD-N08-B-VENUE", "name": "Espaço Cultural 235" },
+        "source": { "sourceId": "destino-poa", "externalId": "gd-n08-b", "url": "https://destinopoa.com.br/evento/gd-n08-b/" }
+      }
+    },
+    {
+      "id": "GD-N09",
+      "description": "Similar-sounding exhibitions at different venues and dates.",
+      "identityTruth": "different",
+      "expectedRouting": "separate",
+      "criticalConflicts": ["venue_conflict", "date_conflict"],
+      "rationale": "A 'special edition' at a different museum on non-overlapping dates is a distinct exhibition, not the same listing reported twice.",
+      "tags": ["similar-title", "different-venue", "date-range"],
+      "difficulty": "medium",
+      "left": {
+        "id": "GD-N09-A", "slug": "gd-n09-a", "title": "Exposição Horizontes do Sul",
+        "occurrence": { "kind": "date", "startDate": "2026-09-01", "endDate": "2026-09-30" },
+        "venue": { "id": "GD-N09-A-VENUE", "name": "Santander Cultural" },
+        "source": { "sourceId": "ticketmaster", "externalId": "TM-GD-N09", "url": "https://example.invalid/tm/gd-n09" }
+      },
+      "right": {
+        "id": "GD-N09-B", "slug": "gd-n09-b", "title": "Exposição Horizontes do Sul - Edição Especial",
+        "occurrence": { "kind": "date", "startDate": "2026-11-01", "endDate": "2026-11-20" },
+        "venue": { "id": "GD-N09-B-VENUE", "name": "Museu de Arte do Rio Grande do Sul" },
+        "source": { "sourceId": "destino-poa", "externalId": "gd-n09-b", "url": "https://destinopoa.com.br/evento/gd-n09-b/" }
+      }
+    },
+    {
+      "id": "GD-N10",
+      "description": "Weekly recurring fair, two different weeks.",
+      "identityTruth": "different",
+      "expectedRouting": "separate",
+      "criticalConflicts": ["date_conflict"],
+      "rationale": "Same weekly fair, same venue, same time of day — but three weeks apart, so these are two distinct weekly occurrences, not the same listing.",
+      "tags": ["recurring", "same-venue", "same-title", "same-time"],
+      "difficulty": "easy",
+      "left": {
+        "id": "GD-N10-A", "slug": "gd-n10-a", "title": "Feira Cultural Bom Fim",
+        "occurrence": { "kind": "timed", "startsAt": "2026-09-06T10:00:00-03:00" },
+        "venue": { "id": "GD-N10-A-VENUE", "name": "Praça Garibaldi" },
+        "source": { "sourceId": "ticketmaster", "externalId": "TM-GD-N10", "url": "https://example.invalid/tm/gd-n10" }
+      },
+      "right": {
+        "id": "GD-N10-B", "slug": "gd-n10-b", "title": "Feira Cultural Bom Fim",
+        "occurrence": { "kind": "timed", "startsAt": "2026-09-27T10:00:00-03:00" },
+        "venue": { "id": "GD-N10-B-VENUE", "name": "Praça Garibaldi" },
+        "source": { "sourceId": "destino-poa", "externalId": "gd-n10-b", "url": "https://destinopoa.com.br/evento/gd-n10-b/" }
+      }
+    },
+    {
+      "id": "GD-N11",
+      "description": "Same venue and time, clearly different activities.",
+      "identityTruth": "different",
+      "expectedRouting": "separate",
+      "criticalConflicts": [],
+      "rationale": "A cultural center runs multiple simultaneous activities in different rooms; matching venue and time alone does not make a poetry reading and a ceramics workshop the same event. No field in the critical-conflict vocabulary captures this — the differentiator is purely the title/activity, which is exactly the kind of case a future matcher must not over-trust venue+time for.",
+      "tags": ["same-venue", "same-time", "different-title"],
+      "difficulty": "easy",
+      "left": {
+        "id": "GD-N11-A", "slug": "gd-n11-a", "title": "Sarau de Poesia",
+        "occurrence": { "kind": "timed", "startsAt": "2026-09-20T18:00:00-03:00" },
+        "venue": { "id": "GD-N11-A-VENUE", "name": "Casa de Cultura Mario Quintana" },
+        "source": { "sourceId": "ticketmaster", "externalId": "TM-GD-N11", "url": "https://example.invalid/tm/gd-n11" }
+      },
+      "right": {
+        "id": "GD-N11-B", "slug": "gd-n11-b", "title": "Oficina de Cerâmica",
+        "occurrence": { "kind": "timed", "startsAt": "2026-09-20T18:00:00-03:00" },
+        "venue": { "id": "GD-N11-B-VENUE", "name": "Casa de Cultura Mario Quintana" },
+        "source": { "sourceId": "destino-poa", "externalId": "gd-n11-b", "url": "https://destinopoa.com.br/evento/gd-n11-b/" }
+      }
+    },
+    {
+      "id": "GD-N12",
+      "description": "Adult edition vs. children's edition of a similarly-named festival.",
+      "identityTruth": "different",
+      "expectedRouting": "separate",
+      "criticalConflicts": ["event_scope_conflict", "venue_conflict", "date_conflict"],
+      "rationale": "The 'Infantil' edition targets a different audience with its own programming, venue and date — a distinct event from the general festival despite the near-identical name.",
+      "tags": ["similar-title", "different-venue", "different-date"],
+      "difficulty": "medium",
+      "left": {
+        "id": "GD-N12-A", "slug": "gd-n12-a", "title": "Festival de Cinema Independente de Porto Alegre",
+        "occurrence": { "kind": "timed", "startsAt": "2026-10-15T19:00:00-03:00" },
+        "venue": { "id": "GD-N12-A-VENUE", "name": "Cinemateca Capitólio" },
+        "source": { "sourceId": "ticketmaster", "externalId": "TM-GD-N12", "url": "https://example.invalid/tm/gd-n12" }
+      },
+      "right": {
+        "id": "GD-N12-B", "slug": "gd-n12-b", "title": "Festival de Cinema Infantil de Porto Alegre",
+        "occurrence": { "kind": "timed", "startsAt": "2026-10-22T15:00:00-03:00" },
+        "venue": { "id": "GD-N12-B-VENUE", "name": "Teatro São Pedro" },
+        "source": { "sourceId": "destino-poa", "externalId": "gd-n12-b", "url": "https://destinopoa.com.br/evento/gd-n12-b/" }
+      }
+    },
+    {
+      "id": "GD-N13",
+      "description": "Same festival, consecutive year editions.",
+      "identityTruth": "different",
+      "expectedRouting": "separate",
+      "criticalConflicts": ["edition_conflict", "date_conflict"],
+      "rationale": "The 2026 and 2027 editions are distinct events a year apart, even with the same title stem and venue.",
+      "tags": ["edition", "same-title-prefix", "same-venue"],
+      "difficulty": "easy",
+      "left": {
+        "id": "GD-N13-A", "slug": "gd-n13-a", "title": "Festival Jazz do Guaíba 2026",
+        "occurrence": { "kind": "timed", "startsAt": "2026-09-10T20:00:00-03:00" },
+        "venue": { "id": "GD-N13-A-VENUE", "name": "Usina do Gasômetro" },
+        "source": { "sourceId": "ticketmaster", "externalId": "TM-GD-N13", "url": "https://example.invalid/tm/gd-n13" }
+      },
+      "right": {
+        "id": "GD-N13-B", "slug": "gd-n13-b", "title": "Festival Jazz do Guaíba 2027",
+        "occurrence": { "kind": "timed", "startsAt": "2027-09-09T20:00:00-03:00" },
+        "venue": { "id": "GD-N13-B-VENUE", "name": "Usina do Gasômetro" },
+        "source": { "sourceId": "destino-poa", "externalId": "gd-n13-b", "url": "https://destinopoa.com.br/evento/gd-n13-b/" }
+      }
+    },
+    {
+      "id": "GD-N14",
+      "description": "Two different free events at the same park on the same day.",
+      "identityTruth": "different",
+      "expectedRouting": "separate",
+      "criticalConflicts": [],
+      "rationale": "A large public park regularly hosts unrelated free activities on the same day. Morning yoga and an evening outdoor film screening are unrelated events that merely share a venue and a 'free' price signal.",
+      "tags": ["same-venue", "same-day", "free", "different-title"],
+      "difficulty": "easy",
+      "left": {
+        "id": "GD-N14-A", "slug": "gd-n14-a", "title": "Cinema ao Ar Livre",
+        "occurrence": { "kind": "timed", "startsAt": "2026-09-26T19:00:00-03:00" },
+        "venue": { "id": "GD-N14-A-VENUE", "name": "Parque Farroupilha" },
+        "price": { "free": true },
+        "source": { "sourceId": "ticketmaster", "externalId": "TM-GD-N14", "url": "https://example.invalid/tm/gd-n14" }
+      },
+      "right": {
+        "id": "GD-N14-B", "slug": "gd-n14-b", "title": "Yoga Coletivo na Redenção",
+        "occurrence": { "kind": "timed", "startsAt": "2026-09-26T08:00:00-03:00" },
+        "venue": { "id": "GD-N14-B-VENUE", "name": "Parque Farroupilha" },
+        "price": { "free": true },
+        "source": { "sourceId": "destino-poa", "externalId": "gd-n14-b", "url": "https://destinopoa.com.br/evento/gd-n14-b/" }
+      }
+    },
+    {
+      "id": "GD-N15",
+      "description": "Generic title reused in different neighborhoods with distinct coordinates.",
+      "identityTruth": "different",
+      "expectedRouting": "separate",
+      "criticalConflicts": ["venue_conflict", "date_conflict"],
+      "rationale": "'Feira Cultural' is used generically by many neighborhood associations; distinct coordinates confirm these are physically different locations on different dates.",
+      "tags": ["generic-title", "different-venue", "different-date", "geo-distant"],
+      "difficulty": "medium",
+      "left": {
+        "id": "GD-N15-A", "slug": "gd-n15-a", "title": "Feira Cultural",
+        "occurrence": { "kind": "timed", "startsAt": "2026-09-06T10:00:00-03:00" },
+        "venue": { "id": "GD-N15-A-VENUE", "name": "Praça Garibaldi", "latitude": -30.0300, "longitude": -51.2000 },
+        "source": { "sourceId": "ticketmaster", "externalId": "TM-GD-N15", "url": "https://example.invalid/tm/gd-n15" }
+      },
+      "right": {
+        "id": "GD-N15-B", "slug": "gd-n15-b", "title": "Feira Cultural",
+        "occurrence": { "kind": "timed", "startsAt": "2026-10-04T10:00:00-03:00" },
+        "venue": { "id": "GD-N15-B-VENUE", "name": "Praça da Cidade Baixa", "latitude": -30.0450, "longitude": -51.2250 },
+        "source": { "sourceId": "destino-poa", "externalId": "gd-n15-b", "url": "https://destinopoa.com.br/evento/gd-n15-b/" }
+      }
+    },
+    {
+      "id": "GD-A01",
+      "description": "Same title and date, conflicting venue. Historical candidate pair carried over unchanged from M3's cross-source-candidates.md.",
+      "identityTruth": "uncertain",
+      "expectedRouting": "review",
+      "criticalConflicts": ["venue_conflict"],
+      "rationale": "Same title and same day across two independent sources, but the venues are genuinely different and not known aliases of each other. Without additional corroborating signal (performer, ticket URL, matching address) we cannot confidently confirm or deny identity — this is the original 'Rock in Porto Alegre' pair documented since M3; its label is preserved, not silently changed.",
+      "tags": ["exact-title", "same-day", "timed"],
+      "difficulty": "hard",
+      "left": {
+        "id": "GD-A01-A", "slug": "gd-a01-a", "title": "Rock in Porto Alegre",
+        "occurrence": { "kind": "timed", "startsAt": "2026-11-20T23:00:00Z" },
+        "venue": { "id": "GD-A01-A-VENUE", "name": "Arena do Grêmio" },
+        "source": { "sourceId": "ticketmaster", "externalId": "TM-EVT-COMPLETE-0001", "url": "https://www.ticketmaster.com/event/tm-evt-complete-0001" }
+      },
+      "right": {
+        "id": "GD-A01-B", "slug": "gd-a01-b", "title": "Rock in Porto Alegre",
+        "occurrence": { "kind": "timed", "startsAt": "2026-11-20T20:00:00-03:00" },
+        "venue": { "id": "GD-A01-B-VENUE", "name": "Parque Maurício Sirotsky Sobrinho" },
+        "source": { "sourceId": "destino-poa", "externalId": "rock-in-porto-alegre-dpoa-2026", "url": "https://destinopoa.com.br/evento/rock-in-porto-alegre-dpoa-2026/" }
+      }
+    },
+    {
+      "id": "GD-A02",
+      "description": "Near-identical title, same venue, 30-minute time difference.",
+      "identityTruth": "uncertain",
+      "expectedRouting": "review",
+      "criticalConflicts": ["time_conflict"],
+      "rationale": "A 30-minute shift could be a schedule update from one source, or two closely-timed but distinct sessions. The venue and near-identical title do not settle it either way.",
+      "tags": ["title-variation", "same-venue", "same-day", "time-shift"],
+      "difficulty": "medium",
+      "left": {
+        "id": "GD-A02-A", "slug": "gd-a02-a", "title": "Sarau de Poesia na Redenção",
+        "occurrence": { "kind": "timed", "startsAt": "2026-09-27T17:00:00-03:00" },
+        "venue": { "id": "GD-A02-A-VENUE", "name": "Parque Farroupilha" },
+        "source": { "sourceId": "ticketmaster", "externalId": "TM-GD-A02", "url": "https://example.invalid/tm/gd-a02" }
+      },
+      "right": {
+        "id": "GD-A02-B", "slug": "gd-a02-b", "title": "Sarau de Poesia da Redenção",
+        "occurrence": { "kind": "timed", "startsAt": "2026-09-27T17:30:00-03:00" },
+        "venue": { "id": "GD-A02-B-VENUE", "name": "Parque Farroupilha" },
+        "source": { "sourceId": "destino-poa", "externalId": "gd-a02-b", "url": "https://destinopoa.com.br/evento/gd-a02-b/" }
+      }
+    },
+    {
+      "id": "GD-A03",
+      "description": "Same performer, venue and day; one source gives no time.",
+      "identityTruth": "uncertain",
+      "expectedRouting": "review",
+      "criticalConflicts": [],
+      "rationale": "Strong corroborating signals (performer, venue, day) suggest the same event, but the date-only source cannot confirm it lines up with the specific evening time the other source reports — could plausibly be a related but distinct engagement the same day.",
+      "tags": ["same-performer", "same-venue", "same-day", "mixed-precision", "missing-time"],
+      "difficulty": "medium",
+      "left": {
+        "id": "GD-A03-A", "slug": "gd-a03-a", "title": "Recital de Câmara",
+        "occurrence": { "kind": "timed", "startsAt": "2026-09-25T20:00:00-03:00" },
+        "venue": { "id": "GD-A03-A-VENUE", "name": "Teatro São Pedro" },
+        "performers": [{ "id": "GD-A03-A-PERF-1", "name": "Banda Exemplo" }],
+        "source": { "sourceId": "ticketmaster", "externalId": "TM-GD-A03", "url": "https://example.invalid/tm/gd-a03" }
+      },
+      "right": {
+        "id": "GD-A03-B", "slug": "gd-a03-b", "title": "Recital de Câmara",
+        "occurrence": { "kind": "date", "startDate": "2026-09-25" },
+        "venue": { "id": "GD-A03-B-VENUE", "name": "Teatro São Pedro" },
+        "performers": [{ "id": "GD-A03-B-PERF-1", "name": "Banda Exemplo" }],
+        "source": { "sourceId": "destino-poa", "externalId": "gd-a03-b", "url": "https://destinopoa.com.br/evento/gd-a03-b/" }
+      }
+    },
+    {
+      "id": "GD-A04",
+      "description": "Two names for the same park (unconfirmed alias) with matching coordinates.",
+      "identityTruth": "uncertain",
+      "expectedRouting": "review",
+      "criticalConflicts": [],
+      "rationale": "'Parque Farroupilha' and 'Redenção' are the same physical park (confirmed by matching coordinates), but with no time, performer or organizer information on either side we cannot confirm these are the same listing rather than two independent uses of a popular public space. The venue alias itself is not in question — whether it's the SAME EVENT is.",
+      "tags": ["venue-alias", "unconfirmed-alias", "date-only", "geo-close"],
+      "difficulty": "medium",
+      "left": {
+        "id": "GD-A04-A", "slug": "gd-a04-a", "title": "Piquenique Cultural",
+        "occurrence": { "kind": "date", "startDate": "2026-09-13" },
+        "venue": { "id": "GD-A04-A-VENUE", "name": "Parque Farroupilha", "latitude": -30.0356, "longitude": -51.2110 },
+        "source": { "sourceId": "ticketmaster", "externalId": "TM-GD-A04", "url": "https://example.invalid/tm/gd-a04" }
+      },
+      "right": {
+        "id": "GD-A04-B", "slug": "gd-a04-b", "title": "Piquenique Cultural",
+        "occurrence": { "kind": "date", "startDate": "2026-09-13" },
+        "venue": { "id": "GD-A04-B-VENUE", "name": "Redenção", "latitude": -30.0357, "longitude": -51.2111 },
+        "source": { "sourceId": "destino-poa", "externalId": "gd-a04-b", "url": "https://destinopoa.com.br/evento/gd-a04-b/" }
+      }
+    },
+    {
+      "id": "GD-A05",
+      "description": "Generic title, venue abbreviation, no time on either side.",
+      "identityTruth": "uncertain",
+      "expectedRouting": "review",
+      "criticalConflicts": [],
+      "rationale": "'CCMQ' is a known abbreviation for the venue, but a generic title with no time, performer or other corroborating detail on either side leaves genuine doubt about whether both sources describe the same specific gathering versus two different literary meet-ups the venue hosts.",
+      "tags": ["venue-alias", "generic-title", "missing-time", "date-only"],
+      "difficulty": "hard",
+      "left": {
+        "id": "GD-A05-A", "slug": "gd-a05-a", "title": "Encontro Literário",
+        "occurrence": { "kind": "date", "startDate": "2026-09-21" },
+        "venue": { "id": "GD-A05-A-VENUE", "name": "Casa de Cultura Mario Quintana" },
+        "source": { "sourceId": "ticketmaster", "externalId": "TM-GD-A05", "url": "https://example.invalid/tm/gd-a05" }
+      },
+      "right": {
+        "id": "GD-A05-B", "slug": "gd-a05-b", "title": "Encontro Literário",
+        "occurrence": { "kind": "date", "startDate": "2026-09-21" },
+        "venue": { "id": "GD-A05-B-VENUE", "name": "CCMQ" },
+        "source": { "sourceId": "destino-poa", "externalId": "gd-a05-b", "url": "https://destinopoa.com.br/evento/gd-a05-b/" }
+      }
+    },
+    {
+      "id": "GD-A06",
+      "description": "One source lists the whole exhibition range; the other a specific opening-night event within it.",
+      "identityTruth": "uncertain",
+      "expectedRouting": "review",
+      "criticalConflicts": ["event_scope_conflict"],
+      "rationale": "The opening night is plausibly part of the same overall exhibition listing, or could be reasonably modeled as its own distinct event (the vernissage). The dataset does not resolve this scope question — it is exactly the kind of case a future engine must route to review rather than guess.",
+      "tags": ["date-range", "timed", "mixed-precision", "same-venue"],
+      "difficulty": "hard",
+      "left": {
+        "id": "GD-A06-A", "slug": "gd-a06-a", "title": "Exposição Horizontes do Sul",
+        "occurrence": { "kind": "date", "startDate": "2026-09-01", "endDate": "2026-09-30" },
+        "venue": { "id": "GD-A06-A-VENUE", "name": "Santander Cultural" },
+        "source": { "sourceId": "ticketmaster", "externalId": "TM-GD-A06", "url": "https://example.invalid/tm/gd-a06" }
+      },
+      "right": {
+        "id": "GD-A06-B", "slug": "gd-a06-b", "title": "Abertura Exposição Horizontes do Sul",
+        "occurrence": { "kind": "timed", "startsAt": "2026-09-05T19:00:00-03:00" },
+        "venue": { "id": "GD-A06-B-VENUE", "name": "Santander Cultural" },
+        "source": { "sourceId": "destino-poa", "externalId": "gd-a06-b", "url": "https://destinopoa.com.br/evento/gd-a06-b/" }
+      }
+    },
+    {
+      "id": "GD-A07",
+      "description": "One source lists the whole festival; the other appears to list a single act within it.",
+      "identityTruth": "uncertain",
+      "expectedRouting": "review",
+      "criticalConflicts": ["event_scope_conflict"],
+      "rationale": "'Jazz do Guaíba - Trio Sul' could be a specific set inside the broader festival window, or a loosely related standalone show reusing the festival's name for visibility. Scope is genuinely ambiguous from the data alone.",
+      "tags": ["festival-subevent", "mixed-precision", "similar-title", "same-venue"],
+      "difficulty": "hard",
+      "left": {
+        "id": "GD-A07-A", "slug": "gd-a07-a", "title": "Festival Jazz do Guaíba",
+        "occurrence": { "kind": "date", "startDate": "2026-09-08", "endDate": "2026-09-12" },
+        "venue": { "id": "GD-A07-A-VENUE", "name": "Usina do Gasômetro" },
+        "source": { "sourceId": "ticketmaster", "externalId": "TM-GD-A07", "url": "https://example.invalid/tm/gd-a07" }
+      },
+      "right": {
+        "id": "GD-A07-B", "slug": "gd-a07-b", "title": "Jazz do Guaíba - Trio Sul",
+        "occurrence": { "kind": "timed", "startsAt": "2026-09-10T21:00:00-03:00" },
+        "venue": { "id": "GD-A07-B-VENUE", "name": "Usina do Gasômetro" },
+        "source": { "sourceId": "destino-poa", "externalId": "gd-a07-b", "url": "https://destinopoa.com.br/evento/gd-a07-b/" }
+      }
+    },
+    {
+      "id": "GD-A08",
+      "description": "Weak title/venue match compounded by an inconclusive ticket URL.",
+      "identityTruth": "uncertain",
+      "expectedRouting": "review",
+      "criticalConflicts": [],
+      "rationale": "The shortened title and vague location description already leave room for doubt; the one available URL points at a generic homepage rather than the specific listing, so it adds no disambiguating evidence either way.",
+      "tags": ["missing-url", "title-variation", "missing-venue", "missing-time"],
+      "difficulty": "medium",
+      "left": {
+        "id": "GD-A08-A", "slug": "gd-a08-a", "title": "Feira de Artesanato Cultural",
+        "occurrence": { "kind": "timed", "startsAt": "2026-10-03T10:00:00-03:00" },
+        "venue": { "id": "GD-A08-A-VENUE", "name": "Praça da Alfândega" },
+        "ticketUrl": "https://destinopoa.com.br/agenda/",
+        "source": { "sourceId": "ticketmaster", "externalId": "TM-GD-A08", "url": "https://example.invalid/tm/gd-a08" }
+      },
+      "right": {
+        "id": "GD-A08-B", "slug": "gd-a08-b", "title": "Feira de Artesanato",
+        "occurrence": { "kind": "date", "startDate": "2026-10-03" },
+        "venue": { "id": "GD-A08-B-VENUE", "name": "Centro Histórico" },
+        "source": { "sourceId": "destino-poa", "externalId": "gd-a08-b", "url": "https://destinopoa.com.br/evento/gd-a08-b/" }
+      }
+    },
+    {
+      "id": "GD-A09",
+      "description": "Heavily truncated title from a second, lower-precision source, with a possible city mismatch.",
+      "identityTruth": "uncertain",
+      "expectedRouting": "review",
+      "criticalConflicts": ["venue_conflict", "city_conflict"],
+      "rationale": "'Festival Jazz' alone is too generic to confirm it refers to this specific festival; the venue doesn't match and the source's city field is imprecise enough to point at a neighboring municipality. The data is too thin to confidently decide same or different — a human reviewer would need to check the original listing.",
+      "tags": ["title-variation", "different-venue", "missing-time"],
+      "difficulty": "hard",
+      "left": {
+        "id": "GD-A09-A", "slug": "gd-a09-a", "title": "Festival Jazz do Guaíba",
+        "occurrence": { "kind": "timed", "startsAt": "2026-09-10T20:00:00-03:00" },
+        "venue": { "id": "GD-A09-A-VENUE", "name": "Usina do Gasômetro" },
+        "source": { "sourceId": "ticketmaster", "externalId": "TM-GD-A09", "url": "https://example.invalid/tm/gd-a09" }
+      },
+      "right": {
+        "id": "GD-A09-B", "slug": "gd-a09-b", "title": "Festival Jazz",
+        "occurrence": { "kind": "date", "startDate": "2026-09-11" },
+        "venue": { "id": "GD-A09-B-VENUE", "name": "Auditório Municipal", "city": "Canoas" },
+        "source": { "sourceId": "destino-poa", "externalId": "gd-a09-b", "url": "https://destinopoa.com.br/evento/gd-a09-b/" }
+      }
+    },
+    {
+      "id": "GD-A10",
+      "description": "Possible reschedule to a different venue two weeks later, with no explicit reschedule note.",
+      "identityTruth": "uncertain",
+      "expectedRouting": "review",
+      "criticalConflicts": ["venue_conflict", "date_conflict"],
+      "rationale": "This could be the same poetry night moved indoors two weeks later (e.g. due to weather) or a genuinely separate event that coincidentally shares a title. Neither source flags a reschedule, so there is not enough evidence to decide either way.",
+      "tags": ["different-date", "different-venue", "reschedule-ambiguous"],
+      "difficulty": "hard",
+      "left": {
+        "id": "GD-A10-A", "slug": "gd-a10-a", "title": "Sarau de Poesia na Redenção",
+        "occurrence": { "kind": "timed", "startsAt": "2026-09-20T17:00:00-03:00" },
+        "venue": { "id": "GD-A10-A-VENUE", "name": "Parque Farroupilha" },
+        "source": { "sourceId": "ticketmaster", "externalId": "TM-GD-A10", "url": "https://example.invalid/tm/gd-a10" }
+      },
+      "right": {
+        "id": "GD-A10-B", "slug": "gd-a10-b", "title": "Sarau de Poesia na Redenção",
+        "occurrence": { "kind": "timed", "startsAt": "2026-10-04T18:00:00-03:00" },
+        "venue": { "id": "GD-A10-B-VENUE", "name": "Casa de Cultura Mario Quintana" },
+        "source": { "sourceId": "destino-poa", "externalId": "gd-a10-b", "url": "https://destinopoa.com.br/evento/gd-a10-b/" }
+      }
+    }
+  ]
+}

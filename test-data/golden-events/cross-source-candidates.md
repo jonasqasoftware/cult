@@ -1,5 +1,11 @@
 # Cross-source dedup candidates
 
+> **Superseded by `test-data/golden-events/deduplication/` (M5).** This file's content is
+> preserved unchanged for history — its decision below was carried forward verbatim into
+> the structured dataset as case `GD-A01` (`identityTruth: uncertain`,
+> `expectedRouting: review`), not silently reinterpreted. New cases and any future label
+> changes belong in `deduplication/cases.json` — see `deduplication/README.md`.
+
 Golden-dataset pairs prepared for the future deduplication milestone. **No matching is
 implemented yet** — M3 deliberately keeps these as two separate `CanonicalEvent` rows (see
 `apps/worker/src/multi-source-ingestion.test.ts`, "no cross-source dedup/merge happens in

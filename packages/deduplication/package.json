@@ -9,6 +9,10 @@
     ".": "./dist/index.js"
   },
   "scripts": {
-    "clean": "rm -rf dist *.tsbuildinfo"
+    "clean": "rm -rf dist *.tsbuildinfo",
+    "dedup:dataset:summary": "tsx src/cli/summary.ts"
+  },
+  "dependencies": {
+    "@cult/domain": "workspace:*"
   }
 }
