@@ -10,7 +10,10 @@
   },
   "scripts": {
     "clean": "rm -rf dist *.tsbuildinfo",
-    "dedup:dataset:summary": "tsx src/cli/summary.ts"
+    "dedup:dataset:summary": "tsx src/cli/summary.ts",
+    "dedup:evaluate:calibration": "tsx src/cli/evaluate.ts calibration",
+    "dedup:evaluate:holdout": "tsx src/cli/evaluate.ts holdout",
+    "dedup:evaluate:all": "tsx src/cli/evaluate.ts all"
   },
   "dependencies": {
     "@cult/domain": "workspace:*"
