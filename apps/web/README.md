@@ -223,7 +223,9 @@ Three image states are deliberately tested as three separate conditions, not fol
   one that failed) and tested separately for that reason.
 
 `EventImage`'s fallback placeholder carries `data-testid="event-image-placeholder"` purely as a
-stable E2E hook (it stays `aria-hidden` and decorative — the visible event title is always
-adjacent text, so no accessible name is needed on the placeholder itself). A valid image now
-gets a real `alt` (the event title) instead of the previous always-empty `alt=""`, on both the
-card and the detail page.
+stable E2E hook (it stays `aria-hidden` and decorative). The `<img>` itself stays `alt=""` on
+both the card and the detail page — a real alt text was tried and reverted: the event title is
+always rendered as adjacent visible text (the card's `<h3>`, the detail page's `<h1>`), so a
+non-empty alt would only double-announce the same string to screen reader users, not add
+information. The image carries `data-testid="event-image"` instead, for the same reason the
+placeholder does — no accessible name to select on, but a locator is still needed.

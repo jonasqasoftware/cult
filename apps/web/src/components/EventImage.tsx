@@ -38,7 +38,11 @@ export function EventImage({ src, alt }: { src: string | null; alt: string }) {
 
   // Plain <img>, not next/image: source images come from multiple external ingestion
   // sources with unpredictable domains — next/image's remotePatterns allowlist isn't worth
-  // maintaining per-source for an MVP1 card image.
+  // maintaining per-source for an MVP1 card image. `alt` stays caller-decorative (empty) in
+  // both call sites (card, detail) — the event title is always adjacent visible text, so a
+  // real alt would be redundant screen-reader noise, not an accessibility improvement.
+  // data-testid, not role="img" + accessible name, is therefore the stable E2E locator here
+  // too (CLAUDE.md's documented exception: only when there's no reasonable semantic locator).
   return (
     <img
       ref={imgRef}
@@ -46,6 +50,7 @@ export function EventImage({ src, alt }: { src: string | null; alt: string }) {
       alt={alt}
       loading="lazy"
       className={styles.image}
+      data-testid="event-image"
       onError={() => setFailed(true)}
     />
   );

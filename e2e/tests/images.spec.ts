@@ -1,6 +1,6 @@
 import { createDatabaseConnection, type Database } from "@cult/database";
 import { expect, test } from "@playwright/test";
-import { deleteValidImageEvent, seedValidImageEvent, VALID_IMAGE_EVENT_SLUG, VALID_IMAGE_EVENT_TITLE, VALID_IMAGE_URL } from "./support/valid-image-event";
+import { buildValidImageEventConfig, deleteValidImageEvent, seedValidImageEvent, VALID_IMAGE_URL } from "./support/valid-image-event";
 
 // M10.1 sections 7-17. Three image states are semantically distinct and tested separately:
 //
@@ -12,6 +12,11 @@ import { deleteValidImageEvent, seedValidImageEvent, VALID_IMAGE_EVENT_SLUG, VAL
 // - missing -> image_url is null (reuses "Feira Gratuita do Centro", whose Ticketmaster
 //             fixture payload never included an `images` array).
 const DATABASE_URL = process.env["DATABASE_URL"] ?? "postgresql://cult:cult@localhost:5432/cult";
+
+// This file's own unique event, distinct from visual-smoke.spec.ts's — see
+// support/valid-image-event.ts's header comment for why sharing one row across files is a race
+// under `fullyParallel`.
+const EVENT = buildValidImageEventConfig("images-spec");
 
 // `.serial` is not just for ordering here — it's what makes `beforeAll`/`afterAll` safe under
 // `fullyParallel: true`. Playwright scopes file-level `beforeAll`/`afterAll` per *worker*, and
@@ -26,22 +31,24 @@ test.describe.serial("valid image", () => {
 
   test.beforeAll(async () => {
     connection = createDatabaseConnection({ connectionString: DATABASE_URL });
-    await seedValidImageEvent(connection.db as Database);
+    await seedValidImageEvent(connection.db as Database, EVENT);
   });
 
   test.afterAll(async () => {
-    await deleteValidImageEvent(connection.db as Database);
+    await deleteValidImageEvent(connection.db as Database, EVENT);
     await connection.close();
   });
 
   test("renders a fully loaded image on the event card", async ({ page }) => {
-    await page.goto(`/?q=${encodeURIComponent(VALID_IMAGE_EVENT_TITLE)}`);
-    const card = page.getByRole("listitem").filter({ hasText: VALID_IMAGE_EVENT_TITLE });
-    const image = card.getByRole("img", { name: VALID_IMAGE_EVENT_TITLE });
+    await page.goto(`/?q=${encodeURIComponent(EVENT.title)}`);
+    const card = page.getByRole("listitem").filter({ hasText: EVENT.title });
+    const image = card.getByTestId("event-image");
 
     await expect(image).toBeVisible();
     await expect(image).toHaveAttribute("src", VALID_IMAGE_URL);
-    await expect(image).toHaveAttribute("alt", VALID_IMAGE_EVENT_TITLE);
+    // Decorative, not a real alt (the title is already adjacent visible text — see
+    // apps/web/src/components/EventImage.tsx and README's "Image quality gate" section).
+    await expect(image).toHaveAttribute("alt", "");
 
     const loaded = await image.evaluate(
       (img: HTMLImageElement) => img.complete && img.naturalWidth > 0 && img.naturalHeight > 0,
@@ -54,16 +61,16 @@ test.describe.serial("valid image", () => {
 
   test("the asset request itself succeeds (no external network dependency)", async ({ page }) => {
     const responsePromise = page.waitForResponse((response) => response.url().endsWith(VALID_IMAGE_URL));
-    await page.goto(`/eventos/${VALID_IMAGE_EVENT_SLUG}`);
+    await page.goto(`/eventos/${EVENT.slug}`);
     const response = await responsePromise;
     expect(response.ok()).toBe(true);
   });
 
   test("renders a fully loaded image on the event detail page", async ({ page }) => {
-    await page.goto(`/eventos/${VALID_IMAGE_EVENT_SLUG}`);
-    await expect(page.getByRole("heading", { level: 1 })).toHaveText(VALID_IMAGE_EVENT_TITLE);
+    await page.goto(`/eventos/${EVENT.slug}`);
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText(EVENT.title);
 
-    const image = page.getByRole("img", { name: VALID_IMAGE_EVENT_TITLE });
+    const image = page.getByTestId("event-image");
     await expect(image).toBeVisible();
     await expect(image).toHaveAttribute("src", VALID_IMAGE_URL);
 
@@ -74,11 +81,11 @@ test.describe.serial("valid image", () => {
   });
 
   test("opening the card from the home page also shows the loaded image on detail", async ({ page }) => {
-    await page.goto(`/?q=${encodeURIComponent(VALID_IMAGE_EVENT_TITLE)}`);
-    await page.getByRole("listitem").filter({ hasText: VALID_IMAGE_EVENT_TITLE }).getByRole("link").click();
-    await expect(page).toHaveURL(`/eventos/${VALID_IMAGE_EVENT_SLUG}`);
+    await page.goto(`/?q=${encodeURIComponent(EVENT.title)}`);
+    await page.getByRole("listitem").filter({ hasText: EVENT.title }).getByRole("link").click();
+    await expect(page).toHaveURL(`/eventos/${EVENT.slug}`);
 
-    const image = page.getByRole("img", { name: VALID_IMAGE_EVENT_TITLE });
+    const image = page.getByTestId("event-image");
     await expect(image).toBeVisible();
     // Polled, not a single evaluate: the image element exists as soon as the client-side
     // navigation renders it, but the fetch/decode itself still takes a (normally tiny) amount

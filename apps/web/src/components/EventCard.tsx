@@ -12,7 +12,7 @@ export function EventCard({ event, categoryName }: { event: CultEvent; categoryN
   return (
     <li className={styles.card}>
       <Link href={`/eventos/${event.slug}`} className={styles.link}>
-        <EventImage src={event.image_url} alt={event.title} />
+        <EventImage src={event.image_url} alt="" />
         <div className={styles.body}>
           {statusLabel ? <p className={styles.status}>{statusLabel}</p> : null}
           {occurrence ? <p className={styles.date}>{formatOccurrence(occurrence)}</p> : null}

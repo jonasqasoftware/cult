@@ -1,12 +1,17 @@
 import { createDatabaseConnection, type Database } from "@cult/database";
 import { expect, test, type Page } from "@playwright/test";
-import { deleteValidImageEvent, seedValidImageEvent, VALID_IMAGE_EVENT_SLUG } from "./support/valid-image-event";
+import { buildValidImageEventConfig, deleteValidImageEvent, seedValidImageEvent } from "./support/valid-image-event";
 
 // M10.1 sections 18-20/29. Four required baselines only (never "snapshot everything" —
 // section 20): home/desktop, home/mobile, a deterministic filtered state, and event detail
 // with a valid image. Never the map (tiles are an external dependency — section 19/31) and
 // never a screenshot of dynamic/timestamped content.
 const DATABASE_URL = process.env["DATABASE_URL"] ?? "postgresql://cult:cult@localhost:5432/cult";
+
+// This file's own unique event, distinct from images.spec.ts's — see
+// support/valid-image-event.ts's header comment for why sharing one row across files is a race
+// under `fullyParallel`.
+const EVENT = buildValidImageEventConfig("visual-smoke");
 
 // Section 19/31 — several golden fixture events carry `example.invalid` image URLs on
 // purpose (section 7). `.invalid` is reserved to never resolve, but real-world DNS/network
@@ -89,17 +94,17 @@ test.describe.serial("event detail with a valid image", () => {
 
   test.beforeAll(async () => {
     connection = createDatabaseConnection({ connectionString: DATABASE_URL });
-    await seedValidImageEvent(connection.db as Database);
+    await seedValidImageEvent(connection.db as Database, EVENT);
   });
 
   test.afterAll(async () => {
-    await deleteValidImageEvent(connection.db as Database);
+    await deleteValidImageEvent(connection.db as Database, EVENT);
     await connection.close();
   });
 
   test("Event detail with a valid image", async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 720 });
-    await page.goto(`/eventos/${VALID_IMAGE_EVENT_SLUG}`);
+    await page.goto(`/eventos/${EVENT.slug}`);
     await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
     await stabilize(page);
     await expect(page).toHaveScreenshot("event-detail-valid-image.png");
