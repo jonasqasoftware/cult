@@ -38,10 +38,10 @@ describe("multi-source coexistence", () => {
     );
 
     expect(ticketmasterSummary.canonicalSaved).toBe(5);
-    expect(destinoPOASummary.canonicalSaved).toBe(7);
+    expect(destinoPOASummary.canonicalSaved).toBe(9);
 
     const { items } = await listCanonicalEvents(connection.db, { limit: 100 });
-    expect(items).toHaveLength(12);
+    expect(items).toHaveLength(14);
 
     const bySource = new Map<string, number>();
     for (const event of items) {
@@ -50,7 +50,7 @@ describe("multi-source coexistence", () => {
       }
     }
     expect(bySource.get("ticketmaster")).toBe(5);
-    expect(bySource.get("destino-poa")).toBe(7);
+    expect(bySource.get("destino-poa")).toBe(9);
 
     // Two distinct CanonicalEvent rows for the intentionally same-titled events — no
     // cross-source dedup/merge happens in M3 (deferred to a future milestone).
@@ -60,5 +60,9 @@ describe("multi-source coexistence", () => {
     expect(new Set(sameTitle.map((event) => event.sources[0]?.sourceId))).toEqual(
       new Set(["ticketmaster", "destino-poa"]),
     );
+
+    // M4/ADR-0014: both occurrence kinds coexist across sources in the same table.
+    const kinds = new Set(items.flatMap((event) => event.occurrences.map((occurrence) => occurrence.kind)));
+    expect(kinds).toEqual(new Set(["timed", "date"]));
   });
 });

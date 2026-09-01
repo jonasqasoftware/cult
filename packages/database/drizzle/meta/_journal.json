@@ -8,6 +8,13 @@
       "when": 1788216061468,
       "tag": "0000_little_nitro",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1788221930206,
+      "tag": "0001_shiny_arclight",
+      "breakpoints": true
     }
   ]
 }

@@ -1,6 +1,8 @@
 import { sql } from "drizzle-orm";
 import {
   boolean,
+  check,
+  date,
   integer,
   jsonb,
   pgTable,
@@ -105,16 +107,45 @@ export const events = pgTable("events", {
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull(),
 });
 
-export const eventOccurrences = pgTable("event_occurrences", {
-  id: text("id").primaryKey(),
-  eventId: text("event_id")
-    .notNull()
-    .references(() => events.id, { onDelete: "cascade" }),
-  startsAt: timestamp("starts_at", { withTimezone: true }).notNull(),
-  endsAt: timestamp("ends_at", { withTimezone: true }),
-  timezone: text("timezone").notNull(),
-  status: text("status").notNull(),
-});
+// M4 (ADR-0014): a discriminated union at the domain level (TimedEventOccurrence |
+// DateOnlyEventOccurrence). temporal_kind mirrors that discriminant; the CHECK constraints
+// below enforce that a row's shape actually matches its declared kind — the database, not
+// just the domain factory, refuses a "timed" row with no starts_at or a "date" row with one.
+export const eventOccurrences = pgTable(
+  "event_occurrences",
+  {
+    id: text("id").primaryKey(),
+    eventId: text("event_id")
+      .notNull()
+      .references(() => events.id, { onDelete: "cascade" }),
+    temporalKind: text("temporal_kind").notNull(), // 'timed' | 'date'
+    startsAt: timestamp("starts_at", { withTimezone: true }),
+    endsAt: timestamp("ends_at", { withTimezone: true }),
+    // mode: "string" — a date-only value is never round-tripped through a JS Date/instant.
+    startDate: date("start_date", { mode: "string" }),
+    endDate: date("end_date", { mode: "string" }),
+    timezone: text("timezone").notNull(),
+    status: text("status").notNull(),
+  },
+  (table) => [
+    check(
+      "event_occurrences_temporal_kind_shape",
+      sql`(
+        (${table.temporalKind} = 'timed' AND ${table.startsAt} IS NOT NULL AND ${table.startDate} IS NULL AND ${table.endDate} IS NULL)
+        OR
+        (${table.temporalKind} = 'date' AND ${table.startDate} IS NOT NULL AND ${table.startsAt} IS NULL AND ${table.endsAt} IS NULL)
+      )`,
+    ),
+    check(
+      "event_occurrences_ends_at_after_starts_at",
+      sql`${table.endsAt} IS NULL OR ${table.endsAt} >= ${table.startsAt}`,
+    ),
+    check(
+      "event_occurrences_end_date_after_start_date",
+      sql`${table.endDate} IS NULL OR ${table.endDate} >= ${table.startDate}`,
+    ),
+  ],
+);
 
 export const eventSources = pgTable(
   "event_sources",

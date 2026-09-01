@@ -45,7 +45,8 @@ apps/
   worker/   Ingestion worker — Ticketmaster + Destino POA fixture ingestion commands
 
 packages/
-  domain/             M1 — entities, ports, source registry (provider-independent)
+  domain/             M1/M4 — entities, ports, source registry; EventOccurrence is a
+                        discriminated union (timed | date-only) — see ADR-0014
   database/           M2 — Drizzle schema, migrations, repositories (multi-source, no dedup)
   connectors/         M2/M3 — Ticketmaster + Destino POA client/adapter/normalizer
   canonical-events/   M2/M3 — slug gen, content hash, provisional score policy (shared)
@@ -122,4 +123,6 @@ via `docker/postgres/initdb/001-extensions.sql` (see ADR-0005). Schema/migration
 (`sources`, `raw_events`, `events`, `event_occurrences`, `event_sources`, `venues`) live in
 `packages/database/drizzle/` and are already multi-source (proven by Ticketmaster + Destino
 POA coexisting) — no schema change was needed to add the second provider, and no dedup table
-exists yet (see ADR-0013 for `raw_events.retention_until`).
+exists yet (see ADR-0013 for `raw_events.retention_until`). `event_occurrences` supports both
+a precise `timed` row and a date-only/ranged `date` row (`temporal_kind`, enforced by CHECK
+constraints) — see ADR-0014.

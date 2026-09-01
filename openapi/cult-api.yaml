@@ -216,16 +216,53 @@ components:
         ranking_score:
           type: number
 
+    # M4 / ADR-0014: not every source gives a precise instant (e.g. a multi-day exhibition
+    # with no published time). "timed" carries a real date-time; "date" carries calendar
+    # dates only — never a time of "00:00" invented to fit the old shape.
     EventOccurrence:
+      oneOf:
+        - $ref: "#/components/schemas/TimedEventOccurrence"
+        - $ref: "#/components/schemas/DateOnlyEventOccurrence"
+      discriminator:
+        propertyName: kind
+        mapping:
+          timed: "#/components/schemas/TimedEventOccurrence"
+          date: "#/components/schemas/DateOnlyEventOccurrence"
+
+    TimedEventOccurrence:
       type: object
-      required: [starts_at, timezone, status]
+      required: [kind, starts_at, timezone, status]
       properties:
+        kind:
+          type: string
+          enum: [timed]
         starts_at:
           type: string
           format: date-time
         ends_at:
           type: [string, "null"]
           format: date-time
+        timezone:
+          type: string
+          example: America/Sao_Paulo
+        status:
+          $ref: "#/components/schemas/EventStatus"
+
+    DateOnlyEventOccurrence:
+      type: object
+      required: [kind, start_date, timezone, status]
+      properties:
+        kind:
+          type: string
+          enum: [date]
+        start_date:
+          type: string
+          format: date
+          example: "2026-08-29"
+        end_date:
+          type: [string, "null"]
+          format: date
+          example: "2026-09-20"
         timezone:
           type: string
           example: America/Sao_Paulo

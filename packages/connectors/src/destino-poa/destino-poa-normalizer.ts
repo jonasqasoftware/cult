@@ -1,8 +1,10 @@
 import {
   createCanonicalEvent,
-  createEventOccurrence,
+  createDateOnlyEventOccurrence,
   createEventSourceReference,
+  createTimedEventOccurrence,
   createVenue,
+  type EventOccurrence,
   type EventPrice,
   type Venue,
 } from "@cult/domain";
@@ -46,30 +48,16 @@ export function normalizeDestinoPOAEvent(
     return { ok: false, reason: "Destino POA event has no name" };
   }
 
-  const window = resolveOccurrenceWindow(dto);
-  if (!window) {
-    // Covers both: a date-only range spanning multiple days, and a single day with no
-    // time of day at all. Neither can be honestly represented by EventOccurrence today —
-    // see ADR-0014. Never invent a time to force it through.
-    return {
-      ok: false,
-      reason:
-        "Destino POA event has no precise single-day start time (date-only or multi-day " +
-        "range — see ADR-0014, EventOccurrence cannot represent this yet)",
-    };
+  const startDate = dto.startDate;
+  if (!startDate) {
+    return { ok: false, reason: "Destino POA event has no date at all" };
   }
 
   const id = `${context.sourceId}-${externalId}`;
   const sourceUrl = dto.url ?? `https://destinopoa.com.br/evento/${externalId}/`;
 
   try {
-    const occurrence = createEventOccurrence({
-      id: `${id}-occ-1`,
-      eventId: id,
-      startsAt: window.startsAt,
-      ...(window.endsAt ? { endsAt: window.endsAt } : {}),
-      status: "scheduled", // Destino POA does not publish cancellation/postponement status
-    });
+    const occurrence = buildOccurrence(dto, startDate, `${id}-occ-1`, id);
 
     const source = createEventSourceReference({
       sourceId: context.sourceId,
@@ -130,26 +118,48 @@ function extractExternalId(dto: DestinoPOAEventDto): string | undefined {
   return match?.[1];
 }
 
-interface OccurrenceWindow {
-  readonly startsAt: Date;
-  readonly endsAt?: Date;
-}
+// ADR-0014 (Accepted): a specific time of day is only usable for a SINGLE day. A multi-day
+// range with a time attached is contradictory source data (not expected in practice from
+// this source) and degrades to a date-only range rather than misapplying that time across
+// every day. Everything else with a date but no time — single day or a range — becomes a
+// DateOnlyEventOccurrence. Never invented: a time of day, or a date where none exists.
+// startDate presence is already checked by the caller before this runs (passed separately,
+// rather than narrowing dto.startDate in place, to keep exactOptionalPropertyTypes happy).
+function buildOccurrence(
+  dto: DestinoPOAEventDto,
+  startDate: string,
+  occurrenceId: string,
+  eventId: string,
+): EventOccurrence {
+  const isSingleDay = !dto.endDate || dto.endDate === startDate;
 
-// Only a specific day WITH a specific time is precise enough. A multi-day range
-// (endDate different from startDate) or a date with no time at all both fail here — see
-// ADR-0014. This mirrors ticketmaster-normalizer's resolveStartsAt rule exactly.
-function resolveOccurrenceWindow(dto: DestinoPOAEventDto): OccurrenceWindow | null {
-  if (!dto.startDate || !dto.startTime) return null;
-  if (dto.endDate && dto.endDate !== dto.startDate) return null;
+  if (dto.startTime && isSingleDay) {
+    const startsAt = new Date(`${startDate}T${dto.startTime}:00-03:00`);
+    if (!Number.isNaN(startsAt.getTime())) {
+      let endsAt: Date | undefined;
+      if (dto.endTime) {
+        const parsedEnd = new Date(`${startDate}T${dto.endTime}:00-03:00`);
+        if (!Number.isNaN(parsedEnd.getTime()) && parsedEnd.getTime() >= startsAt.getTime()) {
+          endsAt = parsedEnd;
+        }
+      }
+      return createTimedEventOccurrence({
+        id: occurrenceId,
+        eventId,
+        startsAt,
+        ...(endsAt ? { endsAt } : {}),
+        status: "scheduled", // Destino POA does not publish cancellation/postponement status
+      });
+    }
+  }
 
-  const startsAt = new Date(`${dto.startDate}T${dto.startTime}:00-03:00`);
-  if (Number.isNaN(startsAt.getTime())) return null;
-
-  if (!dto.endTime) return { startsAt };
-
-  const endsAt = new Date(`${dto.startDate}T${dto.endTime}:00-03:00`);
-  if (Number.isNaN(endsAt.getTime()) || endsAt.getTime() < startsAt.getTime()) return { startsAt };
-  return { startsAt, endsAt };
+  return createDateOnlyEventOccurrence({
+    id: occurrenceId,
+    eventId,
+    startDate,
+    ...(dto.endDate ? { endDate: dto.endDate } : {}),
+    status: "scheduled",
+  });
 }
 
 // Destino POA is, by definition, Porto Alegre's own tourism/agenda portal — every event on

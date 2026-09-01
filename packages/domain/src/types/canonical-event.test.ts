@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { createCanonicalEvent } from "./canonical-event.js";
-import { createEventOccurrence } from "./event-occurrence.js";
+import { createTimedEventOccurrence } from "./event-occurrence.js";
 import { createEventSourceReference } from "./event-source-reference.js";
 
 describe("createCanonicalEvent", () => {
-  const occurrence = createEventOccurrence({
+  const occurrence = createTimedEventOccurrence({
     id: "occ-1",
     eventId: "evt-1",
     startsAt: new Date("2026-09-01T22:00:00-03:00"),

@@ -1,10 +1,10 @@
-# ADR-0014 — EventOccurrence cannot yet represent date-only or multi-day-range events
+# ADR-0014 — EventOccurrence as a discriminated union (timed vs. date-only)
 
 ## Status
-Proposed (open question — no domain change made in M3)
+Accepted
 
 ## Context
-`EventOccurrence.startsAt` (packages/domain) requires a precise `Date` — a specific instant.
+`EventOccurrence.startsAt` (packages/domain) required a precise `Date` — a specific instant.
 Ticketmaster's Discovery API always provides that (M2.1 already rejects its rare
 localDate-only case rather than inventing a `00:00` time). Destino POA's real listings
 (confirmed during the M3 discovery spike against the live site) frequently do **not**
@@ -17,32 +17,82 @@ provide that precision:
   season-long installations, not an edge case.
 
 Applying M2.1's own rule consistently — never invent a time of day to satisfy the schema —
-means the current domain model cannot honestly construct an `EventOccurrence` for either
-case. The M3 normalizer treats both as an explicit normalization failure (raw payload still
-preserved per ADR-0006/0013), which is correct but means a real, non-trivial share of
-Destino POA's actual catalog cannot be ingested yet.
+meant the M3 domain model could not honestly construct an `EventOccurrence` for either case;
+both failed normalization explicitly. M4 resolves this gap.
 
 ## Decision
-No decision yet. This ADR exists to name the gap and stop the affected part of M3's scope
-from silently working around it (e.g. by picking an arbitrary time), per the instruction
-that domain changes are never made silently.
+`EventOccurrence` is a discriminated union, keyed on `kind`:
 
-## Options considered (not chosen — for a future milestone to decide)
+```ts
+type EventOccurrence = TimedEventOccurrence | DateOnlyEventOccurrence;
 
-1. **Precision flag on EventOccurrence** — add something like
-   `precision: "exact" | "date-only"`, keeping `startsAt`/`endsAt` as `Date` but at
-   day-granularity when `precision === "date-only"`, and teaching ranking/discovery to
-   treat date-only occurrences accordingly (e.g. never claim a specific hour in the UI).
-2. **Separate DateRange type** — model multi-day/no-time events as a distinct concept
-   from a point-in-time `EventOccurrence`, at the cost of two shapes for API/ranking code
-   to handle.
-3. **Explode a range into daily occurrences** — turn a 22-day exhibition into 22
-   `EventOccurrence` rows. Simplest to query, but implies a "time" (still none exists) and
-   inflates the occurrence count for something that is really one continuous listing.
+interface TimedEventOccurrence {
+  readonly kind: "timed";
+  readonly startsAt: Date;
+  readonly endsAt?: Date;
+  // ...id, eventId, timezone, status
+}
 
-## Consequences (of not deciding yet)
-- Destino POA (and likely future sources) will keep failing normalization for date-only
-  and ranged events until this is resolved — visible in `raw_events.processing_status =
-  'failed'` with an explicit, honest reason, never silently dropped or guessed.
-- This is documented as real product/data debt in the M3 execution report, not swept under
-  a workaround.
+interface DateOnlyEventOccurrence {
+  readonly kind: "date";
+  readonly startDate: string; // "YYYY-MM-DD"
+  readonly endDate?: string;  // "YYYY-MM-DD", inclusive
+  // ...id, eventId, timezone, status
+}
+```
+
+Built via two explicit factories, `createTimedEventOccurrence` and
+`createDateOnlyEventOccurrence` — never one factory with a pile of optional fields that
+would let an invalid combination (e.g. both `startsAt` and `startDate`) exist.
+`startDate`/`endDate` are plain strings, never a JS `Date` — a date-only value is never
+round-tripped through an instant. Both bounds of a range are **inclusive** in CULT's domain
+semantics; converting to a format with different range semantics (e.g. iCalendar's exclusive
+`DTEND`) is an adapter/exporter concern, never the domain's (see "iCalendar" below).
+
+### Why not the alternatives considered in the original (Proposed) version of this ADR
+
+- **Precision flag on `Date`** (`precision: "exact" | "date-only"` while keeping
+  `startsAt`/`endsAt` as `Date`) — rejected because it would still require manufacturing an
+  artificial instant (a `Date` object) to represent something that has no time component.
+  The flag would document the fabrication without preventing it — any code that reads
+  `startsAt` directly could still misuse a date-only value as if it were precise.
+- **Explode a range into daily occurrences** — rejected because a 22-day exhibition is not
+  22 independent occurrences; it is one continuous listing. Exploding it would inflate
+  occurrence counts, complicate "how many times does this happen" logic, and still implies a
+  time-of-day granularity that doesn't exist.
+- **A `DateRange` type entirely separate from `EventOccurrence`** — rejected because both
+  forms answer the same domain question ("when does this happen") for the same conceptual
+  slot on a `CanonicalEvent` (`occurrences: EventOccurrence[]`). A discriminated union
+  expresses that safely — `CanonicalEvent.occurrences` keeps a single, uniform array type
+  instead of two parallel arrays call sites would have to remember to check.
+
+## Consequences
+
+- `packages/database`: `event_occurrences` gained `temporal_kind`, `start_date`, `end_date`;
+  `starts_at`/`ends_at` became nullable. CHECK constraints enforce that a row's populated
+  columns actually match its `temporal_kind` (see migration `0001_*`), so an invalid shape is
+  rejected by Postgres itself, not just by the domain factory.
+- `openapi/cult-api.yaml`: `EventOccurrence` is now `oneOf` `TimedEventOccurrence` /
+  `DateOnlyEventOccurrence` with a `kind` discriminator. A date-only occurrence is never
+  serialized with a fabricated `T00:00:00` time.
+- `apps/api`'s response mapper switches exhaustively on `kind` — adding a third kind in the
+  future without updating that switch is a compile error, not a silent gap.
+- Ticketmaster's normalizer is unaffected: it only ever produces `kind: "timed"`, and a
+  Ticketmaster event with only a `localDate` (no `dateTime`) still fails normalization
+  explicitly (M2.1's rule stands — no evidence a `localDate`-only Ticketmaster event is
+  semantically "all-day" rather than just missing data).
+- Destino POA's normalizer now succeeds for both previously-failing cases (date-only single
+  day, date-only range) — see the M4 execution report for before/after fixture counts.
+- **Discovery semantics for M6** (documented now, not implemented): a date-only occurrence
+  with `startDate <= today <= endDate` (or `today === startDate` when `endDate` is absent) is
+  "active" that day. Date-only does **not** mean "happening 24 hours a day" — it means only
+  "the source did not report time precision." Ranking/"Acontecendo agora" must not treat a
+  date-only occurrence as continuously live; that logic is not implemented in M4.
+- **SEO/Schema.org** (documented, not implemented): Schema.org's `Event.startDate` accepts
+  both a `DateTime` and a plain `Date`, so both kinds map directly once product UI exists —
+  no JSON-LD is generated in M4.
+- **iCalendar** (documented, not implemented): RFC 5545 has distinct `DATE` and `DATE-TIME`
+  value types, and `DTEND` for a `DATE`-typed range is exclusive of its last day — the
+  opposite of CULT's inclusive `endDate`. Any future `.ics` export must perform that
+  conversion (e.g. `endDate + 1 day`) in the exporter/adapter; the domain must not carry
+  iCalendar-specific range semantics.

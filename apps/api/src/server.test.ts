@@ -1,9 +1,11 @@
 import { afterAll, describe, beforeEach, expect, it } from "vitest";
 import {
   createCanonicalEvent,
-  createEventOccurrence,
+  createDateOnlyEventOccurrence,
+  createTimedEventOccurrence,
   createEventSourceReference,
   createSourceDefinition,
+  type EventOccurrence,
 } from "@cult/domain";
 import { createCanonicalEventRepository, createDatabaseConnection, upsertSource } from "@cult/database";
 import { connectTestDatabase, truncateAllTables } from "@cult/database/test-support";
@@ -33,13 +35,7 @@ afterAll(async () => {
   await connection.close();
 });
 
-function makeEvent(id: string) {
-  const occurrence = createEventOccurrence({
-    id: `${id}-occ`,
-    eventId: id,
-    startsAt: new Date("2026-09-01T22:00:00-03:00"),
-    status: "scheduled",
-  });
+function makeEvent(id: string, occurrence?: EventOccurrence) {
   const source = createEventSourceReference({
     sourceId: "ticketmaster",
     externalId: id,
@@ -53,7 +49,15 @@ function makeEvent(id: string) {
     slug: id,
     title: `Event ${id}`,
     status: "scheduled",
-    occurrences: [occurrence],
+    occurrences: [
+      occurrence ??
+        createTimedEventOccurrence({
+          id: `${id}-occ`,
+          eventId: id,
+          startsAt: new Date("2026-09-01T22:00:00-03:00"),
+          status: "scheduled",
+        }),
+    ],
     sources: [source],
     qualityScore: 0.5,
     rankingScore: 0.5,
@@ -150,5 +154,73 @@ describe("GET /v1/events/:slug", () => {
     expect(response.statusCode).toBe(404);
     expect(response.headers["content-type"]).toContain("application/problem+json");
     expect(response.json().type).toBe("/problems/event-not-found");
+  });
+});
+
+// M4 / ADR-0014: EventOccurrence is a discriminated union — confirm the API serializes both
+// kinds honestly (never a fabricated "T00:00:00" for a date-only occurrence).
+describe("GET /v1/events/:slug — occurrence kinds", () => {
+  it("serializes a timed occurrence", async () => {
+    const repository = createCanonicalEventRepository(connection.db);
+    const occurrence = createTimedEventOccurrence({
+      id: "evt-timed-occ",
+      eventId: "evt-timed",
+      startsAt: new Date("2026-09-01T22:00:00-03:00"),
+      status: "scheduled",
+    });
+    await repository.save(makeEvent("evt-timed", occurrence));
+
+    const response = await app.inject({ method: "GET", url: "/v1/events/evt-timed" });
+    expect(response.statusCode).toBe(200);
+    expect(response.json().occurrences[0]).toEqual({
+      kind: "timed",
+      starts_at: "2026-09-02T01:00:00.000Z",
+      ends_at: null,
+      timezone: "America/Sao_Paulo",
+      status: "scheduled",
+    });
+  });
+
+  it("serializes a date-only single-day occurrence", async () => {
+    const repository = createCanonicalEventRepository(connection.db);
+    const occurrence = createDateOnlyEventOccurrence({
+      id: "evt-date-occ",
+      eventId: "evt-date",
+      startDate: "2026-10-10",
+      status: "scheduled",
+    });
+    await repository.save(makeEvent("evt-date", occurrence));
+
+    const response = await app.inject({ method: "GET", url: "/v1/events/evt-date" });
+    expect(response.statusCode).toBe(200);
+    expect(response.json().occurrences[0]).toEqual({
+      kind: "date",
+      start_date: "2026-10-10",
+      end_date: null,
+      timezone: "America/Sao_Paulo",
+      status: "scheduled",
+    });
+  });
+
+  it("serializes a date-only range occurrence", async () => {
+    const repository = createCanonicalEventRepository(connection.db);
+    const occurrence = createDateOnlyEventOccurrence({
+      id: "evt-range-occ",
+      eventId: "evt-range",
+      startDate: "2026-08-29",
+      endDate: "2026-09-20",
+      status: "scheduled",
+    });
+    await repository.save(makeEvent("evt-range", occurrence));
+
+    const response = await app.inject({ method: "GET", url: "/v1/events/evt-range" });
+    expect(response.statusCode).toBe(200);
+    expect(response.json().occurrences[0]).toEqual({
+      kind: "date",
+      start_date: "2026-08-29",
+      end_date: "2026-09-20",
+      timezone: "America/Sao_Paulo",
+      status: "scheduled",
+    });
   });
 });

@@ -1,4 +1,32 @@
-import type { CanonicalEvent } from "@cult/domain";
+import type { CanonicalEvent, EventOccurrence } from "@cult/domain";
+
+// M4 (ADR-0014): EventOccurrence is a discriminated union. This switch must stay exhaustive —
+// if a new `kind` is ever added to the domain, the `default` branch fails to compile (the
+// unhandled value won't be assignable to `never`), not silently drop data at the API boundary.
+function toOccurrenceResponse(occurrence: EventOccurrence) {
+  switch (occurrence.kind) {
+    case "timed":
+      return {
+        kind: "timed" as const,
+        starts_at: occurrence.startsAt.toISOString(),
+        ends_at: occurrence.endsAt ? occurrence.endsAt.toISOString() : null,
+        timezone: occurrence.timezone,
+        status: occurrence.status,
+      };
+    case "date":
+      return {
+        kind: "date" as const,
+        start_date: occurrence.startDate,
+        end_date: occurrence.endDate ?? null,
+        timezone: occurrence.timezone,
+        status: occurrence.status,
+      };
+    default: {
+      const exhaustiveCheck: never = occurrence;
+      throw new Error(`Unhandled EventOccurrence kind: ${JSON.stringify(exhaustiveCheck)}`);
+    }
+  }
+}
 
 // Maps the internal CanonicalEvent to the public API shape declared in openapi/cult-api.yaml
 // (snake_case at the API boundary; camelCase internally — this is the one translation layer).
@@ -10,12 +38,7 @@ export function toEventResponse(event: CanonicalEvent) {
     description: event.description ?? null,
     status: event.status,
     category: event.categoryId ?? null,
-    occurrences: event.occurrences.map((occurrence) => ({
-      starts_at: occurrence.startsAt.toISOString(),
-      ends_at: occurrence.endsAt ? occurrence.endsAt.toISOString() : null,
-      timezone: occurrence.timezone,
-      status: occurrence.status,
-    })),
+    occurrences: event.occurrences.map(toOccurrenceResponse),
     venue: event.venue
       ? {
           name: event.venue.name,

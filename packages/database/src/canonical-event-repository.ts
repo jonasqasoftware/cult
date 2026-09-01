@@ -1,5 +1,12 @@
 import { and, eq, notInArray, type SQL } from "drizzle-orm";
-import { createCanonicalEvent, type CanonicalEvent, type CanonicalEventRepositoryPort } from "@cult/domain";
+import {
+  createCanonicalEvent,
+  createDateOnlyEventOccurrence,
+  createTimedEventOccurrence,
+  type CanonicalEvent,
+  type CanonicalEventRepositoryPort,
+  type EventOccurrence,
+} from "@cult/domain";
 import { eventOccurrences, events, eventSources, venues } from "./schema.js";
 import type { Database } from "./client.js";
 
@@ -68,14 +75,7 @@ export function createCanonicalEventRepository(db: Database): CanonicalEventRepo
         await tx.delete(eventOccurrences).where(eq(eventOccurrences.eventId, event.id));
         if (event.occurrences.length > 0) {
           await tx.insert(eventOccurrences).values(
-            event.occurrences.map((occurrence) => ({
-              id: occurrence.id,
-              eventId: event.id,
-              startsAt: occurrence.startsAt,
-              endsAt: occurrence.endsAt ?? null,
-              timezone: occurrence.timezone,
-              status: occurrence.status,
-            })),
+            event.occurrences.map((occurrence) => occurrenceToRow(occurrence, event.id)),
           );
         }
 
@@ -152,14 +152,7 @@ export async function loadCanonicalEvent(db: Database, where: SQL): Promise<Cano
     ...(eventRow.categoryId !== null ? { categoryId: eventRow.categoryId } : {}),
     subcategories: eventRow.subcategories,
     status: eventRow.status as CanonicalEvent["status"],
-    occurrences: occurrenceRows.map((row) => ({
-      id: row.id,
-      eventId: row.eventId,
-      startsAt: row.startsAt,
-      ...(row.endsAt !== null ? { endsAt: row.endsAt } : {}),
-      timezone: row.timezone as "America/Sao_Paulo",
-      status: row.status as CanonicalEvent["status"],
-    })),
+    occurrences: occurrenceRows.map(rowToOccurrence),
     ...(venueRow
       ? {
           venue: {
@@ -200,4 +193,71 @@ export async function loadCanonicalEvent(db: Database, where: SQL): Promise<Cano
     createdAt: eventRow.createdAt,
     updatedAt: eventRow.updatedAt,
   });
+}
+
+// M4 (ADR-0014): EventOccurrence is a discriminated union (kind: "timed" | "date"). These two
+// functions are the only place the union crosses the DB boundary — everywhere else works with
+// the already-typed domain value.
+function occurrenceToRow(
+  occurrence: EventOccurrence,
+  eventId: string,
+): typeof eventOccurrences.$inferInsert {
+  const base = {
+    id: occurrence.id,
+    eventId,
+    timezone: occurrence.timezone,
+    status: occurrence.status,
+  };
+
+  if (occurrence.kind === "timed") {
+    return {
+      ...base,
+      temporalKind: "timed",
+      startsAt: occurrence.startsAt,
+      endsAt: occurrence.endsAt ?? null,
+      startDate: null,
+      endDate: null,
+    };
+  }
+
+  return {
+    ...base,
+    temporalKind: "date",
+    startsAt: null,
+    endsAt: null,
+    startDate: occurrence.startDate,
+    endDate: occurrence.endDate ?? null,
+  };
+}
+
+function rowToOccurrence(row: typeof eventOccurrences.$inferSelect): EventOccurrence {
+  const status = row.status as CanonicalEvent["status"];
+
+  if (row.temporalKind === "timed") {
+    if (!row.startsAt) {
+      throw new Error(`event_occurrences row ${row.id}: temporal_kind='timed' but starts_at is NULL`);
+    }
+    return createTimedEventOccurrence({
+      id: row.id,
+      eventId: row.eventId,
+      startsAt: row.startsAt,
+      ...(row.endsAt ? { endsAt: row.endsAt } : {}),
+      status,
+    });
+  }
+
+  if (row.temporalKind === "date") {
+    if (!row.startDate) {
+      throw new Error(`event_occurrences row ${row.id}: temporal_kind='date' but start_date is NULL`);
+    }
+    return createDateOnlyEventOccurrence({
+      id: row.id,
+      eventId: row.eventId,
+      startDate: row.startDate,
+      ...(row.endDate ? { endDate: row.endDate } : {}),
+      status,
+    });
+  }
+
+  throw new Error(`event_occurrences row ${row.id}: unknown temporal_kind "${row.temporalKind}"`);
 }

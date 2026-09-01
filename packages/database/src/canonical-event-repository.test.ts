@@ -1,7 +1,9 @@
+import { sql } from "drizzle-orm";
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 import {
   createCanonicalEvent,
-  createEventOccurrence,
+  createDateOnlyEventOccurrence,
+  createTimedEventOccurrence,
   createEventSourceReference,
   createSourceDefinition,
   createVenue,
@@ -34,7 +36,7 @@ afterAll(async () => {
 });
 
 function makeEvent() {
-  const occurrence = createEventOccurrence({
+  const occurrence = createTimedEventOccurrence({
     id: "occ-1",
     eventId: "evt-1",
     startsAt: new Date("2026-09-01T22:00:00-03:00"),
@@ -102,7 +104,7 @@ describe("CanonicalEventRepository (PostgreSQL)", () => {
     const event = makeEvent();
     await repository.save(event);
 
-    const updatedOccurrence = createEventOccurrence({
+    const updatedOccurrence = createTimedEventOccurrence({
       id: "occ-2",
       eventId: event.id,
       startsAt: new Date("2026-09-02T22:00:00-03:00"),
@@ -199,5 +201,136 @@ describe("CanonicalEventRepository (PostgreSQL)", () => {
     const found = await repository.findById(event.id);
     expect(found?.sources).toHaveLength(1);
     expect(found?.sources[0]?.sourceId).toBe(otherSource.id);
+  });
+});
+
+describe("CanonicalEventRepository — temporal occurrence kinds (M4, ADR-0014)", () => {
+  it("round-trips a timed occurrence", async () => {
+    const event = makeEvent();
+    await repository.save(event);
+    const found = await repository.findById(event.id);
+    const occurrence = found?.occurrences[0];
+    expect(occurrence?.kind).toBe("timed");
+    if (occurrence?.kind === "timed") {
+      expect(occurrence.startsAt).toEqual(new Date("2026-09-01T22:00:00-03:00"));
+    }
+  });
+
+  it("round-trips a date-only single-day occurrence", async () => {
+    const occurrence = createDateOnlyEventOccurrence({
+      id: "occ-date-1",
+      eventId: "evt-date-1",
+      startDate: "2026-10-10",
+      status: "scheduled",
+    });
+    const source = createEventSourceReference({
+      sourceId: testSource.id,
+      externalId: "ext-date-1",
+      url: "https://example.org/e/date-1",
+      firstSeenAt: new Date("2026-01-01T00:00:00Z"),
+      lastSeenAt: new Date("2026-01-01T00:00:00Z"),
+      confidence: 0.8,
+    });
+    const event = createCanonicalEvent({
+      id: "evt-date-1",
+      slug: "evento-data-unica",
+      title: "Evento Data Única",
+      status: "scheduled",
+      occurrences: [occurrence],
+      sources: [source],
+      qualityScore: 0.5,
+      rankingScore: 0.5,
+      firstSeenAt: new Date("2026-01-01T00:00:00Z"),
+      lastSeenAt: new Date("2026-01-01T00:00:00Z"),
+      createdAt: new Date("2026-01-01T00:00:00Z"),
+      updatedAt: new Date("2026-01-01T00:00:00Z"),
+    });
+
+    await repository.save(event);
+    const found = await repository.findById(event.id);
+    const foundOccurrence = found?.occurrences[0];
+    expect(foundOccurrence?.kind).toBe("date");
+    if (foundOccurrence?.kind === "date") {
+      expect(foundOccurrence.startDate).toBe("2026-10-10");
+      expect(foundOccurrence.endDate).toBeUndefined();
+    }
+  });
+
+  it("round-trips a date-only range occurrence", async () => {
+    const occurrence = createDateOnlyEventOccurrence({
+      id: "occ-range-1",
+      eventId: "evt-range-1",
+      startDate: "2026-09-01",
+      endDate: "2026-09-30",
+      status: "scheduled",
+    });
+    const source = createEventSourceReference({
+      sourceId: testSource.id,
+      externalId: "ext-range-1",
+      url: "https://example.org/e/range-1",
+      firstSeenAt: new Date("2026-01-01T00:00:00Z"),
+      lastSeenAt: new Date("2026-01-01T00:00:00Z"),
+      confidence: 0.8,
+    });
+    const event = createCanonicalEvent({
+      id: "evt-range-1",
+      slug: "exposicao-longa",
+      title: "Exposição Longa",
+      status: "scheduled",
+      occurrences: [occurrence],
+      sources: [source],
+      qualityScore: 0.5,
+      rankingScore: 0.5,
+      firstSeenAt: new Date("2026-01-01T00:00:00Z"),
+      lastSeenAt: new Date("2026-01-01T00:00:00Z"),
+      createdAt: new Date("2026-01-01T00:00:00Z"),
+      updatedAt: new Date("2026-01-01T00:00:00Z"),
+    });
+
+    await repository.save(event);
+    const found = await repository.findById(event.id);
+    const foundOccurrence = found?.occurrences[0];
+    expect(foundOccurrence?.kind).toBe("date");
+    if (foundOccurrence?.kind === "date") {
+      expect(foundOccurrence.startDate).toBe("2026-09-01");
+      expect(foundOccurrence.endDate).toBe("2026-09-30");
+    }
+  });
+
+  it("updates a timed occurrence into a date-only one on re-save", async () => {
+    const event = makeEvent();
+    await repository.save(event);
+
+    const dateOccurrence = createDateOnlyEventOccurrence({
+      id: "occ-1",
+      eventId: event.id,
+      startDate: "2026-09-01",
+      endDate: "2026-09-30",
+      status: "scheduled",
+    });
+    const updated = createCanonicalEvent({ ...event, occurrences: [dateOccurrence] });
+    await repository.save(updated);
+
+    const found = await repository.findById(event.id);
+    expect(found?.occurrences[0]?.kind).toBe("date");
+  });
+
+  it("rejects at the database level a row whose columns contradict its temporal_kind", async () => {
+    const event = makeEvent();
+    await repository.save(event);
+
+    let caught: unknown;
+    try {
+      await connection.db.execute(sql`
+        INSERT INTO event_occurrences (id, event_id, temporal_kind, starts_at, start_date, timezone, status)
+        VALUES ('bad-occ', ${event.id}, 'date', now(), '2026-01-01', 'America/Sao_Paulo', 'scheduled')
+      `);
+    } catch (error) {
+      caught = error;
+    }
+
+    expect(caught).toBeDefined();
+    const causeMessage = caught instanceof Error && caught.cause instanceof Error ? caught.cause.message : "";
+    expect(`${caught}${causeMessage}`).toMatch(/event_occurrences_temporal_kind_shape/);
   });
 });

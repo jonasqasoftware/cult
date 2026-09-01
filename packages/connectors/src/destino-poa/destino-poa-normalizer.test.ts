@@ -35,7 +35,11 @@ describe("normalizeDestinoPOAEvent", () => {
     expect(result.event.price).toEqual({ free: false, min: 40, max: 40, currency: "BRL" });
     expect(result.event.categoryId).toBe("cultural");
     expect(result.event.subcategories).toEqual(["show-de-musica"]);
-    expect(result.event.occurrences[0]?.endsAt).toBeInstanceOf(Date);
+    const occurrence = result.event.occurrences[0];
+    expect(occurrence?.kind).toBe("timed");
+    if (occurrence?.kind === "timed") {
+      expect(occurrence.endsAt).toBeInstanceOf(Date);
+    }
     expect(result.event.sources[0]?.sourceId).toBe("destino-poa");
   });
 
@@ -53,14 +57,19 @@ describe("normalizeDestinoPOAEvent", () => {
     expect(result.event.price).toBeUndefined();
   });
 
-  it("fails explicitly on a multi-day date range (ADR-0014), never inventing a time", () => {
+  it("normalizes a multi-day date range as a date-only occurrence (ADR-0014), never inventing a time", () => {
     const result = normalizeDestinoPOAEvent(
       findFixtureEvent("exposicao-arte-gaucha-contemporanea-2026"),
       context,
     );
-    expect(result.ok).toBe(false);
-    if (result.ok) return;
-    expect(result.reason).toMatch(/ADR-0014|range|time/i);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    const occurrence = result.event.occurrences[0];
+    expect(occurrence?.kind).toBe("date");
+    if (occurrence?.kind === "date") {
+      expect(occurrence.startDate).toBe("2026-09-01");
+      expect(occurrence.endDate).toBe("2026-09-30");
+    }
   });
 
   it("normalizes an event with multiple categories", () => {
@@ -78,11 +87,16 @@ describe("normalizeDestinoPOAEvent", () => {
     expect(result.event.imageUrl).toBeUndefined();
   });
 
-  it("fails explicitly when a single day has no time of day, never inventing 00:00", () => {
+  it("normalizes a single day with no time of day as a date-only occurrence, never inventing 00:00", () => {
     const result = normalizeDestinoPOAEvent(findFixtureEvent("encontro-de-food-trucks-2026"), context);
-    expect(result.ok).toBe(false);
-    if (result.ok) return;
-    expect(result.reason).toMatch(/time/i);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    const occurrence = result.event.occurrences[0];
+    expect(occurrence?.kind).toBe("date");
+    if (occurrence?.kind === "date") {
+      expect(occurrence.startDate).toBe("2026-10-10");
+      expect(occurrence.endDate).toBeUndefined();
+    }
   });
 
   it("disambiguates from a Ticketmaster event that shares the exact same title", () => {

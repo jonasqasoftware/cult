@@ -1,7 +1,7 @@
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 import {
   createCanonicalEvent,
-  createEventOccurrence,
+  createTimedEventOccurrence,
   createEventSourceReference,
   createSourceDefinition,
 } from "@cult/domain";
@@ -34,7 +34,7 @@ afterAll(async () => {
 });
 
 function makeEvent(id: string, createdAt: Date) {
-  const occurrence = createEventOccurrence({
+  const occurrence = createTimedEventOccurrence({
     id: `${id}-occ`,
     eventId: id,
     startsAt: new Date("2026-09-01T22:00:00-03:00"),

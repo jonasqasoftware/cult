@@ -1,6 +1,6 @@
 import {
   createCanonicalEvent,
-  createEventOccurrence,
+  createTimedEventOccurrence,
   createEventSourceReference,
   createVenue,
   type EventPrice,
@@ -71,7 +71,7 @@ export function normalizeTicketmasterEvent(
   const sourceUrl = tmEvent.url ?? `https://www.ticketmaster.com/event/${externalId}`;
 
   try {
-    const occurrence = createEventOccurrence({
+    const occurrence = createTimedEventOccurrence({
       id: `${id}-occ-1`,
       eventId: id,
       startsAt,
