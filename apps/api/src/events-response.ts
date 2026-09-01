@@ -30,7 +30,9 @@ function toOccurrenceResponse(occurrence: EventOccurrence) {
 
 // Maps the internal CanonicalEvent to the public API shape declared in openapi/cult-api.yaml
 // (snake_case at the API boundary; camelCase internally — this is the one translation layer).
-export function toEventResponse(event: CanonicalEvent) {
+// `distanceMeters` is only ever set for a `nearby` (lat/lng/radius) discovery query (section
+// 31) — omitted from the response entirely otherwise, not sent as null.
+export function toEventResponse(event: CanonicalEvent, distanceMeters?: number) {
   return {
     id: event.id,
     slug: event.slug,
@@ -65,5 +67,6 @@ export function toEventResponse(event: CanonicalEvent) {
     })),
     quality_score: event.qualityScore,
     ranking_score: event.rankingScore,
+    ...(distanceMeters !== undefined ? { distance_meters: distanceMeters } : {}),
   };
 }

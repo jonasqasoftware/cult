@@ -1,28 +1,28 @@
 import Fastify, { type FastifyInstance } from "fastify";
-import { createCanonicalEventRepository, listCanonicalEvents, ping, type Database } from "@cult/database";
+import { createCanonicalEventRepository, discoverEvents, ping, type Database } from "@cult/database";
 import { toEventResponse } from "./events-response.js";
-
-// Filters declared in openapi/cult-api.yaml but not implemented yet (M2 is only a vertical
-// slice — see docs/product/CLAUDE_CODE_EXECUTION_PLAN.md). Requesting one returns a 400
-// problem+json instead of silently ignoring it and returning an unfiltered result.
-const NOT_YET_IMPLEMENTED_QUERY_PARAMS = [
-  "q",
-  "category",
-  "start",
-  "end",
-  "free",
-  "lat",
-  "lng",
-  "radius",
-  "status",
-];
+import { parseDiscoveryQuery, type DiscoveryQueryError } from "./discovery-query.js";
 
 export interface BuildServerOptions {
   readonly db: Database;
+  // M7 (section 40): production supplies the real clock; tests inject a fixed instant so
+  // today/tomorrow/weekend assertions never depend on when the test suite happens to run.
+  readonly now?: () => Date;
 }
+
+const PROBLEM_TITLES: Record<DiscoveryQueryError, string> = {
+  "invalid-date": "Invalid date",
+  "invalid-period": "Invalid period",
+  "invalid-location": "Invalid location",
+  "invalid-radius": "Invalid radius",
+  "invalid-filter-combination": "Invalid filter combination",
+  "invalid-limit": "Invalid limit",
+  "invalid-query-parameter": "Invalid query parameter",
+};
 
 export function buildServer(options: BuildServerOptions): FastifyInstance {
   const { db } = options;
+  const now = options.now ?? (() => new Date());
   const app = Fastify({ logger: true });
   const canonicalEventRepository = createCanonicalEventRepository(db);
 
@@ -54,39 +54,20 @@ export function buildServer(options: BuildServerOptions): FastifyInstance {
   app.get("/v1/events", async (request, reply) => {
     const query = request.query as Record<string, unknown>;
 
-    const unsupported = NOT_YET_IMPLEMENTED_QUERY_PARAMS.filter((param) => query[param] !== undefined);
-    if (unsupported.length > 0) {
-      return reply
-        .code(400)
-        .type("application/problem+json")
-        .send({
-          type: "/problems/filter-not-implemented",
-          title: "Filter not implemented yet",
-          status: 400,
-          detail: `Declared in the API contract but not implemented in this milestone: ${unsupported.join(", ")}.`,
-        });
-    }
-
-    const limitRaw = query["limit"];
-    const limit = limitRaw !== undefined ? Number(limitRaw) : undefined;
-    if (limit !== undefined && (!Number.isInteger(limit) || limit < 1 || limit > 100)) {
+    const parsed = parseDiscoveryQuery(query, now());
+    if (!parsed.ok) {
       return reply.code(400).type("application/problem+json").send({
-        type: "/problems/invalid-limit",
-        title: "Invalid limit",
+        type: `/problems/${parsed.error}`,
+        title: PROBLEM_TITLES[parsed.error],
         status: 400,
-        detail: "limit must be an integer between 1 and 100",
+        detail: parsed.detail,
       });
     }
-
-    const cursor = typeof query["cursor"] === "string" ? query["cursor"] : undefined;
 
     try {
-      const result = await listCanonicalEvents(db, {
-        ...(cursor ? { cursor } : {}),
-        ...(limit !== undefined ? { limit } : {}),
-      });
+      const result = await discoverEvents(db, parsed.value);
       return {
-        data: result.items.map(toEventResponse),
+        data: result.items.map((item) => toEventResponse(item.event, item.distanceMeters)),
         pagination: { next_cursor: result.nextCursor },
       };
     } catch (error) {

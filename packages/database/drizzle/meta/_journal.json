@@ -15,6 +15,13 @@
       "when": 1788221930206,
       "tag": "0001_shiny_arclight",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1788228701573,
+      "tag": "0002_discovery_indexes",
+      "breakpoints": true
     }
   ]
 }

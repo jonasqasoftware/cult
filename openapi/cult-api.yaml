@@ -22,14 +22,19 @@ paths:
           description: Service is not ready
   /v1/events:
     get:
-      summary: List cultural events
+      summary: Discover cultural events
       description: >-
-        M2 vertical-slice status: only `cursor` and `limit` are implemented. Every other
-        filter below is part of the target contract but returns 400
-        (type `/problems/filter-not-implemented`) if supplied — it is never silently ignored.
+        M7 Discovery API. Every parameter below is implemented — none return
+        `filter-not-implemented`. Defaults to `status=scheduled`
+        (cancelled/postponed/rescheduled/completed events are excluded unless `status` is
+        given explicitly). `period` and `start`/`end` are mutually exclusive; `start` and
+        `end` must be given together. `lat`/`lng` must be given together; `radius` requires
+        both. All calendar-date semantics (`period`, `start`, `end`) resolve in
+        America/Sao_Paulo, never UTC or the server's host timezone.
       parameters:
         - in: query
           name: q
+          description: Full-text-ish search across title, description, venue name and performer names.
           schema:
             type: string
         - in: query
@@ -37,37 +42,56 @@ paths:
           schema:
             type: string
         - in: query
-          name: start
+          name: period
+          description: >-
+            A named discovery shortcut, resolved against the current date in
+            America/Sao_Paulo. Cannot be combined with `start`/`end`.
           schema:
             type: string
-            format: date-time
+            enum: [today, tomorrow, weekend, this_week, this_month]
+        - in: query
+          name: start
+          description: Inclusive start of a custom date range (YYYY-MM-DD). Must be given with `end`.
+          schema:
+            type: string
+            format: date
         - in: query
           name: end
+          description: Inclusive end of a custom date range (YYYY-MM-DD). Must be given with `start`.
           schema:
             type: string
-            format: date-time
+            format: date
         - in: query
           name: free
           schema:
             type: boolean
         - in: query
           name: lat
+          description: Must be given with `lng`.
           schema:
             type: number
             format: double
+            minimum: -90
+            maximum: 90
         - in: query
           name: lng
+          description: Must be given with `lat`.
           schema:
             type: number
             format: double
+            minimum: -180
+            maximum: 180
         - in: query
           name: radius
+          description: Search radius in meters. Requires `lat`/`lng`. Defaults to 5000.
           schema:
             type: integer
             minimum: 1
             maximum: 50000
+            default: 5000
         - in: query
           name: status
+          description: Defaults to `scheduled` when omitted.
           schema:
             $ref: "#/components/schemas/EventStatus"
         - in: query
@@ -214,6 +238,9 @@ components:
           minimum: 0
           maximum: 1
         ranking_score:
+          type: number
+        distance_meters:
+          description: Only present when the request included lat/lng/radius (nearby search).
           type: number
 
     # M4 / ADR-0014: not every source gives a precise instant (e.g. a multi-day exhibition

@@ -28,6 +28,14 @@ export const sources = pgTable("sources", {
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
+// M7 (migration 0002): the table also has a generated `location geography(Point, 4326)`
+// column (STORED, derived from latitude/longitude) plus a GIST index on it, and GIN trigram
+// indexes on `name` (here) and `events.title` — all added by hand-written SQL rather than
+// declared here, because Drizzle's pg-core schema builder in this version has no first-class
+// way to express a PostGIS-generated column or a trigram opclass index. See
+// packages/database/drizzle/0002_discovery_indexes.sql and the Discovery section of this
+// package's README. A future drizzle-kit generate against this file will not know about
+// `location` or these indexes — that drift is intentional and documented, not accidental.
 export const venues = pgTable("venues", {
   id: text("id").primaryKey(),
   name: text("name").notNull(),
@@ -67,6 +75,8 @@ export const rawEvents = pgTable(
   ],
 );
 
+// M7 (migration 0002): also has a plain btree index on `status` and a GIN trigram index on
+// `title` (hand-written SQL — see the `venues` comment above for why).
 export const events = pgTable("events", {
   id: text("id").primaryKey(),
   slug: text("slug").notNull().unique(),
@@ -111,6 +121,8 @@ export const events = pgTable("events", {
 // DateOnlyEventOccurrence). temporal_kind mirrors that discriminant; the CHECK constraints
 // below enforce that a row's shape actually matches its declared kind — the database, not
 // just the domain factory, refuses a "timed" row with no starts_at or a "date" row with one.
+// M7 (migration 0002): also has plain btree indexes on `starts_at` and `(start_date,
+// end_date)`, supporting Discovery's temporal filters (hand-written SQL, same reason as above).
 export const eventOccurrences = pgTable(
   "event_occurrences",
   {

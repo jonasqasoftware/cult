@@ -144,6 +144,23 @@ export async function loadCanonicalEvent(db: Database, where: SQL): Promise<Cano
 
   const sourceRows = await db.select().from(eventSources).where(eq(eventSources.eventId, eventRow.id));
 
+  return assembleCanonicalEvent(eventRow, venueRow, occurrenceRows, sourceRows);
+}
+
+type EventRow = typeof events.$inferSelect;
+type VenueRow = typeof venues.$inferSelect;
+type EventOccurrenceRow = typeof eventOccurrences.$inferSelect;
+type EventSourceRow = typeof eventSources.$inferSelect;
+
+// Shared by loadCanonicalEvent (single event, WHERE-clause-driven) and
+// loadCanonicalEventsByIds (M7: batch-loads many events in a bounded number of queries,
+// instead of one round trip per event — see that module for why).
+export function assembleCanonicalEvent(
+  eventRow: EventRow,
+  venueRow: VenueRow | undefined,
+  occurrenceRows: readonly EventOccurrenceRow[],
+  sourceRows: readonly EventSourceRow[],
+): CanonicalEvent {
   return createCanonicalEvent({
     id: eventRow.id,
     slug: eventRow.slug,

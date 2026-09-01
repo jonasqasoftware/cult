@@ -5,14 +5,20 @@ import {
   createTimedEventOccurrence,
   createEventSourceReference,
   createSourceDefinition,
+  createVenue,
+  type CanonicalEvent,
   type EventOccurrence,
+  type EventPrice,
 } from "@cult/domain";
 import { createCanonicalEventRepository, createDatabaseConnection, upsertSource } from "@cult/database";
 import { connectTestDatabase, truncateAllTables } from "@cult/database/test-support";
 import { buildServer } from "./server.js";
 
 const connection = connectTestDatabase();
-const app = buildServer({ db: connection.db });
+// M7 (section 40): a fixed reference clock, never the real one, so period=today/tomorrow/
+// weekend assertions in this file are deterministic regardless of when the suite runs.
+const NOW = new Date("2026-09-09T12:00:00-03:00"); // Wednesday, 2026-09-09 local
+const app = buildServer({ db: connection.db, now: () => NOW });
 
 const testSource = createSourceDefinition({
   id: "ticketmaster",
@@ -35,7 +41,14 @@ afterAll(async () => {
   await connection.close();
 });
 
-function makeEvent(id: string, occurrence?: EventOccurrence) {
+interface MakeEventOverrides {
+  readonly title?: string;
+  readonly venue?: ReturnType<typeof createVenue>;
+  readonly price?: EventPrice;
+  readonly status?: CanonicalEvent["status"];
+}
+
+function makeEvent(id: string, occurrence?: EventOccurrence, overrides: MakeEventOverrides = {}) {
   const source = createEventSourceReference({
     sourceId: "ticketmaster",
     externalId: id,
@@ -47,8 +60,8 @@ function makeEvent(id: string, occurrence?: EventOccurrence) {
   return createCanonicalEvent({
     id,
     slug: id,
-    title: `Event ${id}`,
-    status: "scheduled",
+    title: overrides.title ?? `Event ${id}`,
+    status: overrides.status ?? "scheduled",
     occurrences: [
       occurrence ??
         createTimedEventOccurrence({
@@ -65,6 +78,8 @@ function makeEvent(id: string, occurrence?: EventOccurrence) {
     lastSeenAt: new Date("2026-01-01T00:00:00Z"),
     createdAt: new Date("2026-01-01T00:00:00Z"),
     updatedAt: new Date("2026-01-01T00:00:00Z"),
+    ...(overrides.venue ? { venue: overrides.venue } : {}),
+    ...(overrides.price ? { price: overrides.price } : {}),
   });
 }
 
@@ -125,17 +140,139 @@ describe("GET /v1/events", () => {
     expect(body.data[0].quality_score).toBe(0.5);
   });
 
-  it("returns a problem+json 400 for a filter that is not implemented yet", async () => {
-    const response = await app.inject({ method: "GET", url: "/v1/events?category=music" });
-    expect(response.statusCode).toBe(400);
-    expect(response.headers["content-type"]).toContain("application/problem+json");
-    expect(response.json().type).toBe("/problems/filter-not-implemented");
-  });
-
   it("returns a problem+json 400 for an out-of-range limit", async () => {
     const response = await app.inject({ method: "GET", url: "/v1/events?limit=0" });
     expect(response.statusCode).toBe(400);
     expect(response.json().type).toBe("/problems/invalid-limit");
+  });
+});
+
+// M7 section 42 — real Fastify inject contract tests for every discovery filter.
+describe("GET /v1/events — discovery filters (contract tests)", () => {
+  it("period=today returns events happening on the injected reference date", async () => {
+    const repository = createCanonicalEventRepository(connection.db);
+    await repository.save(
+      makeEvent(
+        "today-evt",
+        createTimedEventOccurrence({ id: "today-occ", eventId: "today-evt", startsAt: new Date("2026-09-09T20:00:00-03:00"), status: "scheduled" }),
+      ),
+    );
+    await repository.save(
+      makeEvent(
+        "other-day-evt",
+        createTimedEventOccurrence({ id: "other-occ", eventId: "other-day-evt", startsAt: new Date("2026-09-20T20:00:00-03:00"), status: "scheduled" }),
+      ),
+    );
+
+    const response = await app.inject({ method: "GET", url: "/v1/events?period=today" });
+    expect(response.statusCode).toBe(200);
+    expect(response.json().data.map((e: { slug: string }) => e.slug)).toEqual(["today-evt"]);
+  });
+
+  it("period=tomorrow returns events on the day after the injected reference date", async () => {
+    const repository = createCanonicalEventRepository(connection.db);
+    await repository.save(
+      makeEvent(
+        "tomorrow-evt",
+        createTimedEventOccurrence({ id: "tmrw-occ", eventId: "tomorrow-evt", startsAt: new Date("2026-09-10T20:00:00-03:00"), status: "scheduled" }),
+      ),
+    );
+
+    const response = await app.inject({ method: "GET", url: "/v1/events?period=tomorrow" });
+    expect(response.statusCode).toBe(200);
+    expect(response.json().data.map((e: { slug: string }) => e.slug)).toEqual(["tomorrow-evt"]);
+  });
+
+  it("period=weekend returns Saturday/Sunday events, not a Friday one", async () => {
+    const repository = createCanonicalEventRepository(connection.db);
+    await repository.save(
+      makeEvent(
+        "friday-evt",
+        createTimedEventOccurrence({ id: "fri-occ", eventId: "friday-evt", startsAt: new Date("2026-09-11T20:00:00-03:00"), status: "scheduled" }),
+      ),
+    );
+    await repository.save(
+      makeEvent(
+        "saturday-evt",
+        createTimedEventOccurrence({ id: "sat-occ", eventId: "saturday-evt", startsAt: new Date("2026-09-12T20:00:00-03:00"), status: "scheduled" }),
+      ),
+    );
+
+    const response = await app.inject({ method: "GET", url: "/v1/events?period=weekend" });
+    expect(response.statusCode).toBe(200);
+    expect(response.json().data.map((e: { slug: string }) => e.slug)).toEqual(["saturday-evt"]);
+  });
+
+  it("returns 400 invalid-filter-combination when period and start are both given", async () => {
+    const response = await app.inject({ method: "GET", url: "/v1/events?period=today&start=2026-09-10" });
+    expect(response.statusCode).toBe(400);
+    expect(response.json().type).toBe("/problems/invalid-filter-combination");
+  });
+
+  it("free=true returns only events with a known free price", async () => {
+    const repository = createCanonicalEventRepository(connection.db);
+    await repository.save(makeEvent("free-evt", undefined, { price: { free: true, currency: "BRL" } }));
+    await repository.save(makeEvent("paid-evt", undefined, { price: { free: false, currency: "BRL" } }));
+
+    const response = await app.inject({ method: "GET", url: "/v1/events?free=true" });
+    expect(response.statusCode).toBe(200);
+    expect(response.json().data.map((e: { slug: string }) => e.slug)).toEqual(["free-evt"]);
+  });
+
+  it("q=jazz matches a title containing the term", async () => {
+    const repository = createCanonicalEventRepository(connection.db);
+    await repository.save(makeEvent("jazz-evt", undefined, { title: "Noite de Jazz" }));
+    await repository.save(makeEvent("rock-evt", undefined, { title: "Rock Clássico" }));
+
+    const response = await app.inject({ method: "GET", url: "/v1/events?q=jazz" });
+    expect(response.statusCode).toBe(200);
+    expect(response.json().data.map((e: { slug: string }) => e.slug)).toEqual(["jazz-evt"]);
+  });
+
+  it("lat/lng/radius returns nearby events with a distance_meters field", async () => {
+    const repository = createCanonicalEventRepository(connection.db);
+    const venue = createVenue({
+      id: "v-nearby",
+      name: "Nearby Venue",
+      city: "Porto Alegre",
+      state: "RS",
+      latitude: -30.035,
+      longitude: -51.218,
+    });
+    await repository.save(makeEvent("nearby-evt", undefined, { venue }));
+
+    const response = await app.inject({
+      method: "GET",
+      url: "/v1/events?lat=-30.0346&lng=-51.2177&radius=5000",
+    });
+    expect(response.statusCode).toBe(200);
+    const body = response.json();
+    expect(body.data.map((e: { slug: string }) => e.slug)).toEqual(["nearby-evt"]);
+    expect(typeof body.data[0].distance_meters).toBe("number");
+  });
+
+  it("returns 400 invalid-location for lat without lng", async () => {
+    const response = await app.inject({ method: "GET", url: "/v1/events?lat=-30.03" });
+    expect(response.statusCode).toBe(400);
+    expect(response.json().type).toBe("/problems/invalid-location");
+  });
+
+  it("returns 400 invalid-radius for an out-of-range radius", async () => {
+    const response = await app.inject({ method: "GET", url: "/v1/events?lat=-30.03&lng=-51.21&radius=999999" });
+    expect(response.statusCode).toBe(400);
+    expect(response.json().type).toBe("/problems/invalid-radius");
+  });
+
+  it("excludes cancelled events by default and includes them when status=cancelled is explicit", async () => {
+    const repository = createCanonicalEventRepository(connection.db);
+    await repository.save(makeEvent("scheduled-evt"));
+    await repository.save(makeEvent("cancelled-evt", undefined, { status: "cancelled" }));
+
+    const defaultResponse = await app.inject({ method: "GET", url: "/v1/events" });
+    expect(defaultResponse.json().data.map((e: { slug: string }) => e.slug)).toEqual(["scheduled-evt"]);
+
+    const explicitResponse = await app.inject({ method: "GET", url: "/v1/events?status=cancelled" });
+    expect(explicitResponse.json().data.map((e: { slug: string }) => e.slug)).toEqual(["cancelled-evt"]);
   });
 });
 
