@@ -9,6 +9,7 @@ const KNOWN_CATEGORY_LABELS: Record<string, string> = {
   music: "Música",
   "show-de-musica": "Show de Música",
   "arts-theatre": "Teatro e Artes",
+  "teatro-e-artes": "Teatro e Artes",
   theater: "Teatro",
   theatre: "Teatro",
   cinema: "Cinema",
@@ -16,6 +17,8 @@ const KNOWN_CATEGORY_LABELS: Record<string, string> = {
   literatura: "Literatura",
   gastronomia: "Gastronomia",
   miscellaneous: "Diversos",
+  exposicao: "Exposição",
+  "passeio-cultural": "Passeio Cultural",
 };
 
 export function presentCategoryLabel(category: Category): string {

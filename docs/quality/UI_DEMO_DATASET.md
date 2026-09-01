@@ -55,28 +55,35 @@ editorial compositions with real visual weight and distinct identities from each
 technical gray placeholders. No brand, logo, real photograph, or real person appears in any of
 them.
 
-## Duas observações já encontradas (não corrigidas nesta fase)
+## Observações da revisão manual
 
-**Page 1 doesn't show all 10 demo events without "Carregar mais".** Home's first page uses
-`PAGE_SIZE = 12` (`apps/web/src/app/page.tsx`); interleaved chronologically with the 14 golden
-fixture events, only 6 of the 10 demo events land on page 1 (Jazz ao Entardecer, Encontro
-Cultural na Orla, Exposição Luzes do Sul, Noite Indie no Centro, Sarau Entre Linhas, Mostra de
-Cinema do Guaíba) — Feira Criativa da Redenção, Teatro na Cidade Baixa, Visita Arquitetônica ao
-Centro, and Festival de Gastronomia Urbana require clicking "Carregar mais". Per this phase's
-own rule, the API/page size is **not** changed to work around this — it's documented instead.
-Two easy ways to see every demo event at once for review purposes: click "Carregar mais" once,
-or filter/search (e.g. `pnpm demo:reset` then re-seed against an otherwise-empty golden-fixture
-set, or open `/?q=<part of a title>` for a specific one).
+**Category labels — resolved in M10.2 Phase B.** Three of the eight demo categories
+(`Exposição` → `exposicao`, `Teatro e Artes` → `teatro-e-artes`, `Passeio Cultural` →
+`passeio-cultural`) were not in `apps/web/src/lib/format/category.ts`'s
+`KNOWN_CATEGORY_LABELS` map, so their category chips showed the raw technical slug instead of
+a friendly label — real, pre-existing behavior the demo dataset surfaced honestly. Fixed by
+adding those three entries to the same lookup table (purely presentational — no API/category
+id change).
 
+**Source attribution label — resolved in M10.2 Phase B.** The event detail page's
+"Fonte"/"Fontes" section rendered `source.source_id` verbatim, so a demo event's source link
+read literally as "ui-demo" — a technical id, not something a visitor should ever see. Fixed
+via a new `presentSourceLabel` formatter (`apps/web/src/lib/format/source.ts`): `ticketmaster`
+→ "Ticketmaster", `destino-poa` → "Destino POA", `manual-beta` → "Curadoria CULT", `ui-demo` →
+"Conteúdo demonstrativo CULT" (deliberately not "CULT" or "Curadoria CULT" — this is fictional,
+development/demo-only content and must never read as real CULT curation). An unrecognized
+source id still falls back to the raw id, same transparency principle as category labels.
 
-
-Three of the eight demo categories (`Exposição` → `exposicao`, `Teatro e Artes` →
-`teatro-e-artes`, `Passeio Cultural` → `passeio-cultural`) are not in
-`apps/web/src/lib/format/category.ts`'s `KNOWN_CATEGORY_LABELS` map, so their category chips
-will show the raw technical slug instead of a friendly label. This is real, pre-existing
-behavior the demo dataset surfaces honestly — deliberately left as-is per this phase's own
-rule (observe first, decide visual/label changes in Phase B), not silently avoided by picking
-category names that happen to already have a label.
+**Page 1 doesn't show all 10 demo events without "Carregar mais" — not corrected.** Home's
+first page uses `PAGE_SIZE = 12` (`apps/web/src/app/page.tsx`); interleaved chronologically
+with the 14 golden fixture events, only 6 of the 10 demo events land on page 1 (Jazz ao
+Entardecer, Encontro Cultural na Orla, Exposição Luzes do Sul, Noite Indie no Centro, Sarau
+Entre Linhas, Mostra de Cinema do Guaíba) — Feira Criativa da Redenção, Teatro na Cidade Baixa,
+Visita Arquitetônica ao Centro, and Festival de Gastronomia Urbana require clicking "Carregar
+mais". The API/page size is deliberately **not** changed to work around this — it's documented
+instead. Two easy ways to see every demo event at once for review purposes: click "Carregar
+mais" once, or filter/search (e.g. `pnpm demo:reset` then re-seed against an otherwise-empty
+golden-fixture set, or open `/?q=<part of a title>` for a specific one).
 
 ## Como usar
 

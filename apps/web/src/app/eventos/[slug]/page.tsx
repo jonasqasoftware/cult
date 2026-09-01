@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { getEvent } from "../../../lib/api/client";
-import { formatOccurrence, formatPrice, presentCategoryLabelFromId, presentStatusLabel } from "../../../lib/format/index";
+import { formatOccurrence, formatPrice, presentCategoryLabelFromId, presentSourceLabel, presentStatusLabel } from "../../../lib/format/index";
 import { buildEventJsonLd } from "../../../lib/schema/event-jsonld";
 import { AnalyticsPageView } from "../../../components/AnalyticsPageView";
 import { EventImage } from "../../../components/EventImage";
@@ -144,7 +144,7 @@ export default async function EventDetailPage({ params }: EventPageProps) {
               {event.sources.map((source) => (
                 <li key={source.source_id}>
                   <a href={source.url} target="_blank" rel="noopener noreferrer">
-                    {source.source_id}
+                    {presentSourceLabel(source.source_id)}
                   </a>
                 </li>
               ))}
